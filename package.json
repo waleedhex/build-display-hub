@@ -1,0 +1,19 @@
+{
+  "name": "newhexgame",
+  "version": "1.0.0",
+  "description": "Hexagonal letter game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "heroku-prebuild": "echo Node version: $(node --version) && echo npm version: $(npm --version)"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "ws": "^8.5.0",
+    "pg": "^8.7.3"
+  },
+  "engines": {
+    "node": "18.x",
+    "npm": "8.x"
+  }
+}

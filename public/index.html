@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الحروف السداسية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Tahoma', sans-serif; }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #4b0082;
+            flex-direction: column;
+            padding: 1vw;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+        .phone-screen, .welcome-screen, .host-screen, .contestant-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .phone-screen.active, .welcome-screen.active {
+            display: flex;
+            background: #4b0082;
+            color: #fff;
+            padding: 20px;
+            height: 100vh;
+            justify-content: center;
+        }
+        .host-screen.active, .contestant-screen.active { display: flex; }
+        .hex-grid {
+            padding: 0;
+            background: #000000;
+            border-radius: 1vw;
+            box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.3);
+            width: 90vw;
+            max-width: calc(7 * 80px + 6 * 2px);
+            margin: 0 auto;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        .row {
+            display: flex;
+            gap: 0.2vw;
+            justify-content: center;
+        }
+        .row:nth-child(even) { margin-left: -4vw; }
+        .row:nth-child(odd) { margin-right: -4vw; }
+        .row:not(:first-child) { margin-top: -2vw; }
+        .hexagon {
+            width: 8vw;
+            height: 9.2vw;
+            min-width: 40px;
+            min-height: 46px;
+            max-width: 80px;
+            max-height: 92px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5vw;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            background-color: #ffffe0;
+        }
+        .hexagon.contestant-hex { cursor: default; }
+        .hexagon::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            clip-path: inherit;
+            transform: scale(1.05);
+            z-index: -1;
+        }
+        .hexagon.fade { animation: fadeIn 0.5s ease-in-out; }
+        .hexagon.color-transition { transition: background-color 0.1s ease; }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .red-fixed { background-color: #ff4081; cursor: default; }
+        .green-fixed { background-color: #81c784; cursor: default; }
+        .outer-fixed-odd-right { clip-path: polygon(0% 25%, 50% 0%, 50% 100%, 0% 75%, 0% 25%); }
+        .outer-fixed-even-left { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 50% 0%); }
+        .outer-fixed-top { clip-path: polygon(0% 25%, 100% 25%, 100% 75%, 50% 100%, 0% 75%); }
+        .outer-fixed-bottom { clip-path: polygon(0% 25%, 50% 0%, 100% 25%, 100% 75%, 0% 75%); }
+        .outer-fixed-top-left { clip-path: polygon(50% 25%, 100% 25%, 100% 75%, 50% 100%, 50% 75%); }
+        .outer-fixed-bottom-left { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 75%, 50% 25%); }
+        .icon-container {
+            display: flex;
+            gap: 1vw;
+            margin: 1vw 0;
+            align-items: center;
+        }
+        .icon-btn {
+            width: 5vw;
+            height: 5vw;
+            min-width: 30px;
+            min-height: 30px;
+            max-width: 60px;
+            max-height: 60px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2vw;
+            cursor: pointer;
+            transition: transform 0.3s, background-color 0.3s;
+        }
+        .icon-btn:hover {
+            background-color: #0056b3;
+            transform: scale(1.1);
+        }
+        .party-btn { font-size: 2.5vw; }
+        input, select {
+            padding: 8px;
+            font-size: 16px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        button { padding: 8px 16px; margin: 5px; border-radius: 5px; cursor: pointer; }
+        .party-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12vw;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 5px #ff4500;
+            display: none;
+            z-index: 10;
+            animation: pulse 0.8s infinite alternate;
+            -webkit-text-stroke: 2px #000000;
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            100% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+        .flash {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(255, 215, 0, 0.8);
+            border-radius: 50%;
+            z-index: 5;
+            animation: flashAnimation 1s ease-out infinite;
+        }
+        @keyframes flashAnimation {
+            0% { opacity: 1; transform: scale(0); }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; transform: scale(2); }
+        }
+        .buzzer-btn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background-color: #e6b800;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            font-size: 40px;
+            cursor: pointer;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .buzzer-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+        .question-section {
+            margin: 10px 0;
+            padding: 10px;
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            text-align: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .question-section input, .question-section select, .question-section button {
+            flex: 1;
+            min-width: 120px;
+        }
+        .buzzer-info {
+            color: #fff;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        .players-container {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            margin: 10px 0;
+        }
+        .team-list {
+            width: 45%;
+            padding: 10px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-height: 100px;
+        }
+        .team-list h3 { text-align: center; margin: 0 0 10px 0; }
+        .player-bubble {
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 5px;
+            background: #e0e0e0;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: move;
+        }
+        .player-bubble.red { background: #ff4081; color: #fff; }
+        .player-bubble.green { background: #81c784; color: #fff; }
+        .error-message {
+            color: red;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            margin: 0 10px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        .toggle-label {
+            color: #fff;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+        .questions-container {
+            max-height: 200px;
+            width: 70%;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            background: #fff;
+            margin-top: 10px;
+            color: #000;
+        }
+        .question-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            white-space: nowrap;
+        }
+        .question-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        #adminPanel {
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 90%;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .stats {
+            color: #fff;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        @media (max-width: 600px) {
+            .hexagon { width: 12vw; height: 13.8vw; min-width: 30px; min-height: 34.5px; font-size: 2.5vw; }
+            .row { gap: 0.1vw; }
+            .row:nth-child(even) { margin-left: -6vw; }
+            .row:nth-child(odd) { margin-right: -6vw; }
+            .row:not(:first-child) { margin-top: -3vw; }
+            .hex-grid { width: 95vw; }
+            .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
+            .party-btn { font-size: 3.5vw; }
+            .party-text { font-size: 18vw; -webkit-text-stroke: 1.5px #000000; }
+            .buzzer-btn { width: 160px; height: 160px; font-size: 18px; }
+            .players-container { flex-direction: column; width: 90%; }
+            .team-list { width: 100%; margin-bottom: 10px; }
+            .question-section { width: 90%; flex-direction: column; }
+            .questions-container { width: 90%; max-height: 150px; }
+            .toggle-switch { width: 30px; height: 15px; }
+            .slider:before { height: 11px; width: 11px; }
+            input:checked + .slider:before { transform: translateX(15px); }
+            .toggle-label { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="phone-screen active" id="phoneScreen">
+            <h2>أدخل رمز الجلسة</h2>
+            <input type="text" id="phoneNumber" placeholder="مثال: X7K9P2">
+            <button id="submitPhoneButton">تأكيد</button>
+            <p id="phoneError" class="error-message"></p>
+        </div>
+
+        <div class="welcome-screen" id="welcomeScreen">
+            <h2>مرحبًا بك في لعبة الحروف!</h2>
+            <input type="text" id="playerName" placeholder="أدخل اسمك">
+            <div>
+                <button id="hostButton">مضيف</button>
+                <button id="contestantButton">متسابق</button>
+            </div>
+            <p id="welcomeError" class="error-message"></p>
+            <div id="adminPanel" style="display: none; margin-top: 20px;">
+                <h3>إدارة الرموز</h3>
+                <input type="number" id="codeCount" placeholder="عدد الرموز المطلوبة" min="1" max="5000">
+                <button id="generateCodesButton">توليد الرموز</button>
+                <button id="copyCodesButton" style="display: none;">نسخ الرموز</button>
+                <br>
+                <input type="text" id="manualCode" placeholder="إضافة رمز يدويًا">
+                <button id="addManualCodeButton">إضافة الرمز</button>
+                <br>
+                <input type="text" id="deleteCode" placeholder="حذف رمز">
+                <button id="deleteCodeButton">حذف الرمز</button>
+                <br>
+                <textarea id="deleteCodesList" placeholder="أدخل قائمة الرموز للحذف (كل رمز في سطر)"></textarea>
+                <button id="deleteCodesListButton">حذف القائمة</button>
+                <br>
+                <input type="number" id="deleteLatestCount" placeholder="عدد الرموز الأحدث للحذف">
+                <button id="deleteLatestCodesButton">حذف الأحدث</button>
+                <p id="adminStatus" style="color: #fff;"></p>
+                <p id="adminError" class="error-message"></p>
+                <p id="codesCount" class="stats"></p>
+                <p id="questionsCount" class="stats"></p>
+                <div id="generatedCodes" style="margin-top: 10px;"></div>
+                <h3>إدارة الأسئلة العامة</h3>
+                <input type="text" id="newGeneralQuestion" placeholder="أدخل السؤال">
+                <input type="text" id="newGeneralAnswer" placeholder="أدخل الإجابة">
+                <select id="generalQuestionLetter">
+                    <option value="">اختر حرف</option>
+                    <option value="أ">أ</option><option value="ب">ب</option><option value="ت">ت</option><option value="ث">ث</option>
+                    <option value="ج">ج</option><option value="ح">ح</option><option value="خ">خ</option><option value="د">د</option>
+                    <option value="ذ">ذ</option><option value="ر">ر</option><option value="ز">ز</option><option value="س">س</option>
+                    <option value="ش">ش</option><option value="ص">ص</option><option value="ض">ض</option><option value="ط">ط</option>
+                    <option value="ظ">ظ</option><option value="ع">ع</option><option value="غ">غ</option><option value="ف">ف</option>
+                    <option value="ق">ق</option><option value="ك">ك</option><option value="ل">ل</option><option value="م">م</option>
+                    <option value="ن">ن</option><option value="ه">ه</option><option value="و">و</option><option value="ي">ي</option>
+                </select>
+                <button id="addGeneralQuestionButton">إضافة سؤال عام</button>
+                <input type="file" id="excelFile" accept=".xlsx">
+                <button id="uploadExcelButton">رفع ملف Excel</button>
+                <select id="generalLetterFilter">
+                    <option value="">جميع الحروف</option>
+                    <option value="أ">أ</option><option value="ب">ب</option><option value="ت">ت</option><option value="ث">ث</option>
+                    <option value="ج">ج</option><option value="ح">ح</option><option value="خ">خ</option><option value="د">د</option>
+                    <option value="ذ">ذ</option><option value="ر">ر</option><option value="ز">ز</option><option value="س">س</option>
+                    <option value="ش">ش</option><option value="ص">ص</option><option value="ض">ض</option><option value="ط">ط</option>
+                    <option value="ظ">ظ</option><option value="ع">ع</option><option value="غ">غ</option><option value="ف">ف</option>
+                    <option value="ق">ق</option><option value="ك">ك</option><option value="ل">ل</option><option value="م">م</option>
+                    <option value="ن">ن</option><option value="ه">ه</option><option value="و">و</option><option value="ي">ي</option>
+                </select>
+                <div id="generalQuestionsList" class="questions-container"></div>
+                <button id="deleteGeneralQuestionsButton">حذف الأسئلة المحددة</button>
+                <h3>أسئلة الجلسات</h3>
+                <select id="sessionLetterFilter">
+                    <option value="">جميع الحروف</option>
+                    <option value="أ">أ</option><option value="ب">ب</option><option value="ت">ت</option><option value="ث">ث</option>
+                    <option value="ج">ج</option><option value="ح">ح</option><option value="خ">خ</option><option value="د">د</option>
+                    <option value="ذ">ذ</option><option value="ر">ر</option><option value="ز">ز</option><option value="س">س</option>
+                    <option value="ش">ش</option><option value="ص">ص</option><option value="ض">ض</option><option value="ط">ط</option>
+                    <option value="ظ">ظ</option><option value="ع">ع</option><option value="غ">غ</option><option value="ف">ف</option>
+                    <option value="ق">ق</option><option value="ك">ك</option><option value="ل">ل</option><option value="م">م</option>
+                    <option value="ن">ن</option><option value="ه">ه</option><option value="و">و</option><option value="ي">ي</option>
+                </select>
+                <div id="sessionQuestionsList" class="questions-container"></div>
+                <button id="addToGeneralButton">إضافة المحدد للعام</button>
+            </div>
+        </div>
+
+        <div class="host-screen" id="hostScreen">
+            <div class="hex-grid" id="hexGridHost">
+                <div class="party-text" id="partyText">مبروك</div>
+            </div>
+            <div class="icon-container">
+                <button id="shuffleButton" class="icon-btn" title="خلط الحروف"><i class="fas fa-random"></i></button>
+                <button id="swapColorsButton" class="icon-btn" title="عكس الحدود"><i class="fas fa-exchange-alt"></i></button>
+                <button id="changeColorsButton" class="icon-btn" title="تغيير الألوان"><i class="fas fa-palette"></i></button>
+                <button id="partyButton" class="icon-btn party-btn" title="بارتي">🎉</button>
+                <button id="resetBuzzerButton" class="icon-btn" title="إعادة تعيين الجرس"><i class="fas fa-bell"></i></button>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="toggleQuestions" checked>
+                    <span class="slider"></span>
+                </label>
+                <span class="toggle-label">استخدام الأسئلة العامة</span>
+            </div>
+            <p id="buzzerInfo" class="buzzer-info"></p>
+            <div class="question-section">
+                <p id="currentQuestion" style="flex: 100%; margin: 0;"></p>
+                <button id="nextQuestionButton">السؤال التالي</button>
+                <input type="text" id="newQuestionInput" placeholder="أدخل السؤال">
+                <input type="text" id="newAnswerInput" placeholder="أدخل الإجابة">
+                <select id="questionLetter">
+                    <option value="">اختر حرف</option>
+                    <option value="أ">أ</option><option value="ب">ب</option><option value="ت">ت</option><option value="ث">ث</option>
+                    <option value="ج">ج</option><option value="ح">ح</option><option value="خ">خ</option><option value="د">د</option>
+                    <option value="ذ">ذ</option><option value="ر">ر</option><option value="ز">ز</option><option value="س">س</option>
+                    <option value="ش">ش</option><option value="ص">ص</option><option value="ض">ض</option><option value="ط">ط</option>
+                    <option value="ظ">ظ</option><option value="ع">ع</option><option value="غ">غ</option><option value="ف">ف</option>
+                    <option value="ق">ق</option><option value="ك">ك</option><option value="ل">ل</option><option value="م">م</option>
+                    <option value="ن">ن</option><option value="ه">ه</option><option value="و">و</option><option value="ي">ي</option>
+                </select>
+                <button id="addQuestionButton">إضافة سؤال</button>
+            </div>
+            <div class="players-container">
+                <div class="team-list" id="redTeamList" ondragover="allowDrop(event)" ondrop="drop(event)"><h3>الفريق الأحمر</h3></div>
+                <div class="team-list" id="greenTeamList" ondragover="allowDrop(event)" ondrop="drop(event)"><h3>الفريق الأخضر</h3></div>
+            </div>
+        </div>
+
+        <div class="contestant-screen" id="contestantScreen">
+            <div class="hex-grid" id="hexGridContestant">
+                <div class="party-text" id="partyTextContestant">مبروك</div>
+            </div>
+            <p id="contestantBuzzerInfo" class="buzzer-info"></p>
+            <button id="buzzerButton" class="buzzer-btn"><i class="fas fa-bell"></i></button>
+            <div id="teamInfo" style="margin-top: 10px; color: #fff;"></div>
+        </div>
+    </div>
+
+    <audio id="buzzerSound" src="/school-bell.mp3" preload="auto"></audio>
+
+    <script>
+        const letters = ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'];
+        const colorSets = [
+            { red: '#ff4081', green: '#81c784' },
+            { red: '#f8bbd0', green: '#4dd0e1' },
+            { red: '#d32f2f', green: '#0288d1' },
+            { red: '#ff5722', green: '#388e3c' }
+        ];
+        let currentColorSetIndex = 0;
+        let isSwapped = false;
+        let defaultQuestions = {};
+
+        function getColorCycle() {
+            return [
+                '#ffffe0',  // 0: أصفر فاتح (السؤال مختفي)
+                '#ffa500',  // 1: برتقالي (السؤال يظهر)
+                colorSets[currentColorSetIndex].red,  // 2: أحمر
+                colorSets[currentColorSetIndex].green,  // 3: أخضر
+                '#ffffe0'   // 4: أصفر فاتح (السؤال يختفي)
+            ];
+        }
+
+        let ws = null;
+        let isHost = false;
+        let partyInterval = null;
+        let currentQuestionLetter = '';
+        const usedQuestions = {};
+        let phoneNumber = null;
+        let isAdmin = false;
+        let playerName = '';
+
+        try {
+            ws = new WebSocket(window.location.protocol === 'https:' ? 'wss://' + window.location.host : 'ws://' + window.location.host);
+        } catch (error) {
+            console.error('Failed to initialize WebSocket:', error);
+            document.getElementById('phoneError').textContent = 'فشل الاتصال بالخادم.';
+        }
+
+        window.onload = () => {
+            createHexGrid('hexGridHost', true);
+            createHexGrid('hexGridContestant', false);
+            updateCodesCount();
+            const audio = document.getElementById('buzzerSound');
+            audio.load();
+        };
+
+        if (ws) {
+            ws.onopen = () => {
+                console.log('Connected to WebSocket');
+                document.getElementById('phoneError').textContent = '';
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                document.getElementById('phoneError').textContent = 'فشل الاتصال بالخادم.';
+            };
+
+            ws.onmessage = (event) => {
+                const { type, data } = JSON.parse(event.data);
+                if (type === 'codeVerified') {
+                    phoneNumber = document.getElementById('phoneNumber').value.trim();
+                    isAdmin = (phoneNumber.toUpperCase() === 'IMWRA143');
+                    document.getElementById('phoneScreen').classList.remove('active');
+                    document.getElementById('welcomeScreen').classList.add('active');
+                    if (isAdmin) {
+                        document.getElementById('adminPanel').style.display = 'block';
+                        fetchGeneralQuestions();
+                        fetchSessionQuestions();
+                    }
+                } else if (type === 'codeError') {
+                    document.getElementById('phoneError').textContent = data;
+                } else if (type === 'codesGenerated') {
+                    const generatedCodesDiv = document.getElementById('generatedCodes');
+                    generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
+                    document.getElementById('adminStatus').textContent = 'انتهى التوليد';
+                    document.getElementById('copyCodesButton').style.display = 'inline';
+                    updateCodesCount();
+                } else if (type === 'manualCodeAdded') {
+                    document.getElementById('generatedCodes').innerHTML = `تم إضافة الرمز: ${data}`;
+                    document.getElementById('adminStatus').textContent = '';
+                    document.getElementById('copyCodesButton').style.display = 'none';
+                    updateCodesCount();
+                } else if (type === 'codeDeleted') {
+                    document.getElementById('generatedCodes').innerHTML = `تم حذف الرمز: ${data}`;
+                    document.getElementById('adminStatus').textContent = '';
+                    document.getElementById('copyCodesButton').style.display = 'none';
+                    updateCodesCount();
+                } else if (type === 'codesDeleted') {
+                    document.getElementById('adminStatus').textContent = `تم حذف ${data.length} رمز`;
+                    document.getElementById('generatedCodes').innerHTML = '';
+                    updateCodesCount();
+                } else if (type === 'adminError') {
+                    document.getElementById('adminError').textContent = data;
+                    document.getElementById('adminStatus').textContent = '';
+                } else if (type === 'generalQuestions') {
+                    displayGeneralQuestions(data);
+                    document.getElementById('questionsCount').textContent = `عدد الأسئلة العامة: ${data.length}`;
+                } else if (type === 'sessionQuestions') {
+                    displaySessionQuestions(data);
+                } else if (type === 'generalQuestionAdded' || type === 'generalQuestionsAdded') {
+                    document.getElementById('adminStatus').textContent = data;
+                    fetchGeneralQuestions();
+                } else if (type === 'generalQuestionsDeleted') {
+                    document.getElementById('adminStatus').textContent = 'تم حذف الأسئلة المحددة';
+                    fetchGeneralQuestions();
+                } else if (type === 'addedToGeneral') {
+                    document.getElementById('adminStatus').textContent = 'تم إضافة الأسئلة المحددة إلى العام';
+                    fetchGeneralQuestions();
+                    fetchSessionQuestions();
+                } else if (type === 'codesCount') {
+                    document.getElementById('codesCount').textContent = `إجمالي عدد الرموز: ${data}`;
+                } else if (type === 'init') {
+                    defaultQuestions = data.questions || {};
+                    currentColorSetIndex = data.colorSetIndex;
+                    isSwapped = data.isSwapped;
+                    updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+                    updateTeams(data.teams);
+                    updateBuzzer(data.buzzer);
+                } else if (type === 'updateHexagon') {
+                    const hex = document.querySelector(`#${isHost ? 'hexGridHost' : 'hexGridContestant'} .changeable[data-letter="${data.letter}"]`);
+                    if (hex) {
+                        hex.style.backgroundColor = data.color;
+                        hex.dataset.clickCount = data.clickCount;
+                        if (data.clickCount === '1') {
+                            currentQuestionLetter = data.letter;
+                            showQuestionAndAnswer(data.letter);
+                        } else if (data.clickCount === '0') {
+                            document.getElementById('currentQuestion').textContent = '';
+                        }
+                    }
+                } else if (type === 'shuffle') {
+                    updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+                    stopPartyMode();
+                } else if (type === 'swapColors') {
+                    isSwapped = data.isSwapped;
+                    updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+                } else if (type === 'changeColors') {
+                    currentColorSetIndex = data.colorSetIndex;
+                    updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+                    stopPartyMode();
+                } else if (type === 'party') {
+                    if (data.active) startPartyMode(); else stopPartyMode();
+                } else if (type === 'buzzer') {
+                    updateBuzzer(data);
+                    if (data.active && isHost) {
+                        const audio = document.getElementById('buzzerSound');
+                        audio.play().catch(err => console.error('Error playing buzzer sound:', err));
+                    }
+                } else if (type === 'timeUp') {
+                    updateBuzzer({ active: false, player: '', message: 'انتهى الوقت' });
+                    setTimeout(() => {
+                        updateBuzzer({ active: false, player: '' });
+                    }, 3000); // إخفاء الرسالة بعد 3 ثواني
+                } else if (type === 'resetBuzzer') {
+                    updateBuzzer({ active: false, player: '' });
+                } else if (type === 'updateTeams') {
+                    updateTeams(data);
+                } else if (type === 'updateQuestions') {
+                    defaultQuestions = data;
+                } else if (type === 'joinError') {
+                    alert(data);
+                    document.getElementById('welcomeScreen').classList.add('active');
+                    document.getElementById('hostScreen').classList.remove('active');
+                    document.getElementById('contestantScreen').classList.remove('active');
+                }
+            };
+        }
+
+        document.getElementById('submitPhoneButton').addEventListener('click', () => {
+            const input = document.getElementById('phoneNumber').value.trim();
+            if (input) {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'verifyPhone', data: { phoneNumber: input } }));
+                } else {
+                    document.getElementById('phoneError').textContent = 'فشل الاتصال بالخادم';
+                }
+            } else {
+                document.getElementById('phoneError').textContent = 'الرجاء إدخال رمز الجلسة!';
+            }
+        });
+
+        document.getElementById('hostButton').addEventListener('click', () => {
+            const name = document.getElementById('playerName').value.trim();
+            if (name) {
+                playerName = name;
+                isHost = true;
+                document.getElementById('welcomeScreen').classList.remove('active');
+                document.getElementById('hostScreen').classList.add('active');
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'join', data: { role: 'host', name, phoneNumber } }));
+                }
+            } else {
+                alert('الرجاء إدخال اسمك!');
+            }
+        });
+
+        document.getElementById('contestantButton').addEventListener('click', () => {
+            const name = document.getElementById('playerName').value.trim();
+            if (name) {
+                playerName = name;
+                isHost = false;
+                document.getElementById('welcomeScreen').classList.remove('active');
+                document.getElementById('contestantScreen').classList.add('active');
+                assignRandomTeam(name); // يعرض فقط معلومات مؤقتة
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'join', data: { role: 'contestant', name, phoneNumber } }));
+                }
+            } else {
+                alert('الرجاء إدخال اسمك!');
+            }
+        });
+
+        document.getElementById('generateCodesButton').addEventListener('click', () => {
+            const count = parseInt(document.getElementById('codeCount').value);
+            if (count > 0 && count <= 5000 && ws && ws.readyState === WebSocket.OPEN) {
+                document.getElementById('adminStatus').textContent = 'جاري التوليد...';
+                document.getElementById('adminError').textContent = '';
+                ws.send(JSON.stringify({ type: 'generateCodes', data: { count, phoneNumber } }));
+            } else {
+                document.getElementById('adminError').textContent = 'أدخل عدد صحيح بين 1 و5000!';
+            }
+        });
+
+        document.getElementById('addManualCodeButton').addEventListener('click', () => {
+            const code = document.getElementById('manualCode').value.trim();
+            if (code && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'addManualCode', data: { code, phoneNumber } }));
+                document.getElementById('manualCode').value = '';
+            } else {
+                document.getElementById('adminError').textContent = 'أدخل رمزًا صحيحًا!';
+            }
+        });
+
+        document.getElementById('deleteCodeButton').addEventListener('click', () => {
+            const code = document.getElementById('deleteCode').value.trim();
+            if (code && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'deleteCode', data: { code, phoneNumber } }));
+                document.getElementById('deleteCode').value = '';
+            } else {
+                document.getElementById('adminError').textContent = 'أدخل رمزًا صحيحًا لحذفه!';
+            }
+        });
+
+        document.getElementById('deleteCodesListButton').addEventListener('click', () => {
+            const codesText = document.getElementById('deleteCodesList').value.trim();
+            if (codesText && ws && ws.readyState === WebSocket.OPEN) {
+                const codes = codesText.split('\n').map(code => code.trim()).filter(code => code);
+                ws.send(JSON.stringify({ type: 'deleteCodesList', data: { codes, phoneNumber } }));
+                document.getElementById('deleteCodesList').value = '';
+            } else {
+                document.getElementById('adminError').textContent = 'أدخل قائمة رموز صحيحة!';
+            }
+        });
+
+        document.getElementById('deleteLatestCodesButton').addEventListener('click', () => {
+            const count = parseInt(document.getElementById('deleteLatestCount').value);
+            if (count > 0 && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'deleteLatestCodes', data: { count, phoneNumber } }));
+                document.getElementById('deleteLatestCount').value = '';
+            } else {
+                document.getElementById('adminError').textContent = 'أدخل عدد صحيح أكبر من 0!';
+            }
+        });
+
+        document.getElementById('copyCodesButton').addEventListener('click', () => {
+            const codesText = document.getElementById('generatedCodes').innerText.replace('الرموز الجديدة:\n', '');
+            navigator.clipboard.writeText(codesText).then(() => {
+                document.getElementById('adminStatus').textContent = 'تم النسخ بنجاح!';
+            }).catch(err => {
+                console.error('فشل النسخ:', err);
+                document.getElementById('adminError').textContent = 'فشل نسخ الرموز!';
+            });
+        });
+
+        document.getElementById('addGeneralQuestionButton').addEventListener('click', () => {
+            const question = document.getElementById('newGeneralQuestion').value.trim();
+            const answer = document.getElementById('newGeneralAnswer').value.trim();
+            const letter = document.getElementById('generalQuestionLetter').value;
+            if (question && answer && letter && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'addGeneralQuestion', data: { letter, question, answer, phoneNumber } }));
+                document.getElementById('newGeneralQuestion').value = '';
+                document.getElementById('newGeneralAnswer').value = '';
+                document.getElementById('generalQuestionLetter').value = '';
+            } else {
+                document.getElementById('adminError').textContent = 'يرجى إدخال السؤال والإجابة والحرف!';
+            }
+        });
+
+        document.getElementById('uploadExcelButton').addEventListener('click', () => {
+            const fileInput = document.getElementById('excelFile');
+            const file = fileInput.files[0];
+            if (file && ws && ws.readyState === WebSocket.OPEN) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const json = XLSX.utils.sheet_to_json(sheet, { header: ['letter', 'question', 'answer'] });
+                    json.shift(); // Remove header row
+                    ws.send(JSON.stringify({ type: 'addGeneralQuestions', data: { fileContent: JSON.stringify(json), phoneNumber } }));
+                };
+                reader.readAsArrayBuffer(file);
+                fileInput.value = '';
+            } else {
+                document.getElementById('adminError').textContent = 'يرجى اختيار ملف Excel!';
+            }
+        });
+
+        document.getElementById('deleteGeneralQuestionsButton').addEventListener('click', () => {
+            const selected = Array.from(document.querySelectorAll('#generalQuestionsList input[type="checkbox"]:checked'))
+                .map(cb => cb.dataset.id);
+            if (selected.length > 0 && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'deleteGeneralQuestions', data: { ids: selected, phoneNumber } }));
+            } else {
+                document.getElementById('adminError').textContent = 'يرجى تحديد أسئلة لحذفها!';
+            }
+        });
+
+        document.getElementById('addToGeneralButton').addEventListener('click', () => {
+            const selected = Array.from(document.querySelectorAll('#sessionQuestionsList input[type="checkbox"]:checked'))
+                .map(cb => ({ letter: cb.dataset.letter, question: cb.dataset.question, answer: cb.dataset.answer }));
+            if (selected.length > 0 && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'addToGeneral', data: { questions: selected, phoneNumber } }));
+            } else {
+                document.getElementById('adminError').textContent = 'يرجى تحديد أسئلة لإضافتها!';
+            }
+        });
+
+        document.getElementById('generalLetterFilter').addEventListener('change', () => {
+            fetchGeneralQuestions();
+        });
+
+        document.getElementById('sessionLetterFilter').addEventListener('change', () => {
+            fetchSessionQuestions();
+        });
+
+        function createHexGrid(gridId, clickable) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            grid.innerHTML = '<div class="party-text" id="partyText' + (gridId === 'hexGridHost' ? '' : 'Contestant') + '">مبروك</div>';
+            const layout = [
+                ['', '', '', '', '', '', ''],
+                ['', 'أ', 'ب', 'ت', 'ث', 'ج', ''],
+                ['', 'ح', 'خ', 'د', 'ذ', 'ر', ''],
+                ['', 'ز', 'س', 'ش', 'ص', 'ض', ''],
+                ['', 'ط', 'ظ', 'ع', 'غ', 'ف', ''],
+                ['', 'ق', 'ك', 'ل', 'م', 'ن', ''],
+                ['', '', '', '', '', 'ه', '']
+            ];
+
+            layout.forEach((row, rowIndex) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'row';
+                row.forEach((letter, colIndex) => {
+                    const hex = document.createElement('div');
+                    hex.className = `hexagon ${gridId === 'hexGridContestant' ? 'contestant-hex' : ''}`;
+                    if (rowIndex === 0) {
+                        if (colIndex === 0 || colIndex === 6) {
+                            hex.classList.add('green-fixed');
+                            if (colIndex === 0) hex.classList.add('outer-fixed-top-left');
+                            else hex.classList.add('outer-fixed-top');
+                        } else {
+                            hex.classList.add('red-fixed');
+                            hex.classList.add('outer-fixed-top');
+                        }
+                    } else if (rowIndex === 6) {
+                        if (colIndex === 0 || colIndex === 6) {
+                            hex.classList.add('green-fixed');
+                            if (colIndex === 0) hex.classList.add('outer-fixed-bottom-left');
+                            else hex.classList.add('outer-fixed-bottom');
+                        } else {
+                            hex.classList.add('red-fixed');
+                            hex.classList.add('outer-fixed-bottom');
+                        }
+                    } else if (colIndex === 0 || colIndex === 6) {
+                        hex.classList.add('green-fixed');
+                        if (colIndex === 6 && (rowIndex === 1 || rowIndex === 3 || rowIndex === 5)) hex.classList.add('outer-fixed-odd-right');
+                        else if (colIndex === 0 && (rowIndex === 2 || rowIndex === 4)) hex.classList.add('outer-fixed-even-left');
+                    } else if (letter) {
+                        hex.classList.add('changeable');
+                        hex.textContent = letter;
+                        hex.dataset.letter = letter;
+                        hex.dataset.clickCount = '0';
+                        if (clickable) hex.addEventListener('click', () => handleHexClick(hex));
+                    }
+                    rowDiv.appendChild(hex);
+                });
+                grid.appendChild(rowDiv);
+            });
+
+            if (gridId === 'hexGridHost' && isHost && ws && ws.readyState === WebSocket.OPEN) {
+                const hexagons = {};
+                const availableLetters = [...letters];
+                const shuffled = [];
+                for (let i = 0; i < letters.length; i++) {
+                    const randomIndex = Math.floor(Math.random() * availableLetters.length);
+                    shuffled.push(availableLetters[randomIndex]);
+                    hexagons[shuffled[i]] = { color: '#ffffe0', clickCount: '0' };
+                    availableLetters.splice(randomIndex, 1);
+                }
+                updateGrid(hexagons, shuffled, gridId);
+                ws.send(JSON.stringify({ type: 'shuffle', data: { lettersOrder: shuffled, hexagons, phoneNumber } }));
+            }
+        }
+
+        function handleHexClick(hex) {
+            const letter = hex.dataset.letter;
+            let clickCount = parseInt(hex.dataset.clickCount) || 0;
+            clickCount = (clickCount + 1) % 5;
+            hex.dataset.clickCount = clickCount.toString();
+
+            const colorCycle = getColorCycle();
+            const newColor = colorCycle[clickCount];
+            hex.style.backgroundColor = newColor;
+
+            if (clickCount === 1) {
+                currentQuestionLetter = letter;
+                document.getElementById('questionLetter').value = letter;
+                showQuestionAndAnswer(letter);
+            } else if (clickCount === 0) {
+                document.getElementById('currentQuestion').textContent = '';
+            }
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'updateHexagon', data: { letter, color: newColor, clickCount, phoneNumber } }));
+            }
+        }
+
+        function showQuestionAndAnswer(letter) {
+            const toggle = document.getElementById('toggleQuestions').checked;
+            const questions = toggle ? defaultQuestions.general : defaultQuestions.session;
+            if (!questions || !questions[letter]) {
+                document.getElementById('currentQuestion').textContent = toggle ? 
+                    'لا توجد أسئلة عامة لهذا الحرف' : 
+                    'انت لم تضيف سؤال لهذا الحرف، جرب تفعيل الأسئلة العامة';
+                return;
+            }
+            if (!usedQuestions[letter]) usedQuestions[letter] = [];
+            const availableQuestions = questions[letter];
+            let availableIndexes = [];
+            if (usedQuestions[letter].length < availableQuestions.length) {
+                availableIndexes = availableQuestions.map((_, index) => index).filter(i => !usedQuestions[letter].includes(i));
+            } else {
+                usedQuestions[letter] = [];
+                availableIndexes = availableQuestions.map((_, index) => index);
+            }
+            const randomIndex = availableIndexes[Math.floor(Math.random() * availableIndexes.length)];
+            const [question, answer] = availableQuestions[randomIndex];
+            usedQuestions[letter].push(randomIndex);
+            document.getElementById('currentQuestion').textContent = `${question} - ${answer}`;
+        }
+
+        function rgbToHex(rgb) {
+            if (!rgb || rgb === '') return '#ffffe0';
+            if (rgb.startsWith('#')) return rgb.toLowerCase();
+            const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            if (!match) return '#ffffe0';
+            const r = parseInt(match[1]).toString(16).padStart(2, '0');
+            const g = parseInt(match[2]).toString(16).padStart(2, '0');
+            const b = parseInt(match[3]).toString(16).padStart(2, '0');
+            return `#${r}${g}${b}`.toLowerCase();
+        }
+
+        document.getElementById('shuffleButton').addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const hexagons = {};
+                const availableLetters = [...letters];
+                const shuffled = [];
+                for (let i = 0; i < letters.length; i++) {
+                    const randomIndex = Math.floor(Math.random() * availableLetters.length);
+                    shuffled.push(availableLetters[randomIndex]);
+                    hexagons[shuffled[i]] = { color: '#ffffe0', clickCount: '0' };
+                    availableLetters.splice(randomIndex, 1);
+                }
+                ws.send(JSON.stringify({ type: 'shuffle', data: { lettersOrder: shuffled, hexagons, phoneNumber } }));
+            }
+        });
+
+        document.getElementById('swapColorsButton').addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                isSwapped = !isSwapped;
+                const hexagons = {};
+                document.querySelectorAll('#hexGridHost .changeable').forEach(hex => {
+                    hexagons[hex.dataset.letter] = { color: rgbToHex(hex.style.backgroundColor), clickCount: hex.dataset.clickCount };
+                });
+                ws.send(JSON.stringify({ 
+                    type: 'swapColors', 
+                    data: { 
+                        isSwapped: isSwapped, 
+                        hexagons, 
+                        lettersOrder: Array.from(document.querySelectorAll('#hexGridHost .changeable')).map(h => h.dataset.letter),
+                        phoneNumber 
+                    } 
+                }));
+            }
+        });
+
+        document.getElementById('changeColorsButton').addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const newIndex = (currentColorSetIndex + 1) % colorSets.length;
+                const hexagons = {};
+                document.querySelectorAll('#hexGridHost .changeable').forEach(hex => {
+                    hexagons[hex.dataset.letter] = { color: rgbToHex(hex.style.backgroundColor), clickCount: hex.dataset.clickCount };
+                });
+                ws.send(JSON.stringify({ 
+                    type: 'changeColors', 
+                    data: { 
+                        colorSetIndex: newIndex, 
+                        hexagons, 
+                        lettersOrder: Array.from(document.querySelectorAll('#hexGridHost .changeable')).map(h => h.dataset.letter),
+                        phoneNumber 
+                    } 
+                }));
+            }
+        });
+
+        document.getElementById('partyButton').addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'party', data: { active: true, phoneNumber } }));
+            }
+        });
+
+        function startPartyMode() {
+            const partyText = document.getElementById(isHost ? 'partyText' : 'partyTextContestant');
+            const grid = document.getElementById(isHost ? 'hexGridHost' : 'hexGridContestant');
+            partyText.style.display = 'block';
+            if (!partyInterval) {
+                partyInterval = setInterval(() => {
+                    const currentSet = colorSets[currentColorSetIndex];
+                    const currentTextColor = rgbToHex(partyText.style.color);
+                    partyText.style.color = (currentTextColor === '#ffd700') ? currentSet.red : '#ffd700';
+                    for (let i = 0; i < 5; i++) {
+                        const flash = document.createElement('div');
+                        flash.className = 'flash';
+                        flash.style.left = Math.random() * 100 + '%';
+                        flash.style.top = Math.random() * 100 + '%';
+                        flash.style.backgroundColor = ['#ffd700', '#ff4500', '#00ff00'][Math.floor(Math.random() * 3)];
+                        grid.appendChild(flash);
+                        setTimeout(() => flash.remove(), 1000);
+                    }
+                }, 300);
+                setTimeout(() => {
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'party', data: { active: false, phoneNumber } }));
+                    }
+                }, 5000);
+            }
+        }
+
+        function stopPartyMode() {
+            if (partyInterval) {
+                clearInterval(partyInterval);
+                partyInterval = null;
+                document.getElementById('partyText').style.display = 'none';
+                document.getElementById('partyTextContestant').style.display = 'none';
+                document.querySelectorAll('.flash').forEach(flash => flash.remove());
+            }
+        }
+
+        document.getElementById('buzzerButton').addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'buzzer', data: { player: playerName, phoneNumber } }));
+                const audio = document.getElementById('buzzerSound');
+                audio.play().catch(err => console.error('Error playing buzzer sound on contestant:', err));
+            }
+        });
+
+        document.getElementById('resetBuzzerButton').addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'resetBuzzer', data: { phoneNumber } }));
+            }
+        });
+
+        document.getElementById('nextQuestionButton').addEventListener('click', () => {
+            if (currentQuestionLetter) showQuestionAndAnswer(currentQuestionLetter);
+        });
+
+        document.getElementById('addQuestionButton').addEventListener('click', () => {
+            const question = document.getElementById('newQuestionInput').value.trim();
+            const answer = document.getElementById('newAnswerInput').value.trim();
+            const letter = document.getElementById('questionLetter').value;
+            if (question && answer && letter && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'addQuestion', data: { letter, question, answer, phoneNumber } }));
+                document.getElementById('newQuestionInput').value = '';
+                document.getElementById('newAnswerInput').value = '';
+                document.getElementById('questionLetter').value = '';
+                alert('تم إضافة السؤال والإجابة بنجاح!');
+            } else {
+                alert('يرجى إدخال السؤال والإجابة وحرف السؤال!');
+            }
+        });
+
+        function updateGrid(hexagons, lettersOrder, gridId) {
+            const gridHexagons = document.querySelectorAll(`#${gridId} .changeable`);
+            gridHexagons.forEach((hex, index) => {
+                const letter = lettersOrder[index];
+                hex.textContent = letter;
+                hex.dataset.letter = letter;
+                hex.style.backgroundColor = hexagons[letter].color;
+                hex.dataset.clickCount = hexagons[letter].clickCount;
+            });
+            const redHexagons = document.querySelectorAll(`#${gridId} .red-fixed`);
+            const greenHexagons = document.querySelectorAll(`#${gridId} .green-fixed`);
+            const currentSet = colorSets[currentColorSetIndex];
+            redHexagons.forEach(hex => {
+                hex.style.backgroundColor = isSwapped ? currentSet.green : currentSet.red;
+            });
+            greenHexagons.forEach(hex => {
+                hex.style.backgroundColor = isSwapped ? currentSet.red : currentSet.green;
+            });
+        }
+
+        function updateBuzzer(buzzer) {
+            const buzzerButton = document.getElementById('buzzerButton');
+            const info = document.getElementById(isHost ? 'buzzerInfo' : 'contestantBuzzerInfo');
+            if (buzzer.message) {
+                info.textContent = buzzer.message;
+                if (!isHost) buzzerButton.disabled = false;
+            } else if (buzzer.active) {
+                info.textContent = `${buzzer.player} ضغط الجرس!`;
+                if (!isHost) buzzerButton.disabled = true;
+            } else {
+                info.textContent = '';
+                if (!isHost) buzzerButton.disabled = false;
+            }
+        }
+
+        function assignRandomTeam(name) {
+            document.getElementById('teamInfo').textContent = 'جاري تحديد فريقك...';
+            // لا تقم بإضافة الاسم إلى DOM هنا، دع الخادم يتولى ذلك عبر updateTeams
+        }
+
+        function updateTeams(teams) {
+            console.log('تحديث الفرق باستخدام:', teams);
+            ['red', 'green'].forEach(team => {
+                const teamList = document.getElementById(`${team}TeamList`);
+                teamList.innerHTML = `<h3>الفريق ${team === 'red' ? 'الأحمر' : 'الأخضر'}</h3>`;
+                if (teams[team] && Array.isArray(teams[team])) {
+                    teams[team].forEach(name => {
+                        if (!teamList.querySelector(`.player-bubble[data-name="${name}"]`)) {
+                            const bubble = document.createElement('div');
+                            bubble.className = `player-bubble ${team}`;
+                            bubble.textContent = name;
+                            bubble.dataset.name = name;
+                            if (isHost) {
+                                bubble.draggable = true;
+                                bubble.addEventListener('dragstart', drag);
+                            }
+                            teamList.appendChild(bubble);
+                        }
+                    });
+                }
+                if (!isHost && playerName && teams[team].includes(playerName)) {
+                    document.getElementById('teamInfo').textContent = `أنت في الفريق ${team === 'red' ? 'الأحمر' : 'الأخضر'}`;
+                }
+            });
+        }
+
+        function updateTeamsFromDOM() {
+            const teams = { red: [], green: [] };
+            ['red', 'green'].forEach(team => {
+                document.querySelectorAll(`#${team}TeamList .player-bubble`).forEach(bubble => {
+                    teams[team].push(bubble.dataset.name);
+                });
+            });
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'updateTeams', data: { teams, phoneNumber } }));
+            }
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData('text', ev.target.dataset.name);
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const name = ev.dataTransfer.getData('text');
+            const oldTeam = document.querySelector(`.player-bubble[data-name="${name}"]`).parentElement.id === 'redTeamList' ? 'red' : 'green';
+            const newTeam = ev.target.closest('#redTeamList') ? 'red' : 'green';
+            if (oldTeam !== newTeam) {
+                const bubble = document.querySelector(`.player-bubble[data-name="${name}"]`);
+                bubble.classList.remove(oldTeam);
+                bubble.classList.add(newTeam);
+                ev.target.closest('.team-list').appendChild(bubble);
+                updateTeamsFromDOM();
+            }
+        }
+
+        function updateCodesCount() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'getCodesCount', data: { phoneNumber } }));
+            }
+        }
+
+        function fetchGeneralQuestions() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const letter = document.getElementById('generalLetterFilter').value;
+                ws.send(JSON.stringify({ type: 'getGeneralQuestions', data: { letter, phoneNumber } }));
+            }
+        }
+
+        function fetchSessionQuestions() {
+            const letter = document.getElementById('sessionLetterFilter').value;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'getSessionQuestions', data: { letter, phoneNumber } }));
+            }
+        }
+
+        function displayGeneralQuestions(questions) {
+            const list = document.getElementById('generalQuestionsList');
+            list.innerHTML = '';
+            questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `<input type="checkbox" data-id="${q.id}"> ${q.letter} - ${q.question} - ${q.answer}`;
+                list.appendChild(div);
+            });
+            document.getElementById('questionsCount').textContent = `عدد الأسئلة العامة: ${questions.length}`;
+        }
+
+        function displaySessionQuestions(questions) {
+            const list = document.getElementById('sessionQuestionsList');
+            list.innerHTML = '';
+            questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `<input type="checkbox" data-letter="${q.letter}" data-question="${q.question}" data-answer="${q.answer}"> ${q.letter} - ${q.question} - ${q.answer}`;
+                list.appendChild(div);
+            });
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</body>
+</html>
