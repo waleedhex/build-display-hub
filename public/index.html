@@ -52,22 +52,21 @@
 
 .row {
     display: flex;
-    gap: calc(90vw / 100); /* المسافة الأفقية بين السداسيات */
+    gap: calc(90vw / 300); /* تقليل الفجوة الأفقية أكثر */
     justify-content: center;
 }
 
 .row:not(:first-child) {
-    margin-top: calc(-0.25 * (1.15 * (90vw / 7))); /* تداخل عمودي يعادل 25% من ارتفاع السداسية */
+    margin-top: calc(-0.3 * (1.15 * (90vw / 7))); /* زيادة التداخل العمودي */
 }
 
 .row:nth-child(even) {
-    margin-left: calc(0.5 * (90vw / 7)); /* نصف عرض السداسية فقط */
+    margin-left: calc(0.5 * (90vw / 7));
 }
 
 .row:nth-child(odd) {
-    margin-right: calc(0.5 * (90vw / 7)); /* نصف عرض السداسية فقط */
+    margin-right: calc(0.5 * (90vw / 7));
 }
-
     .hexagon {
         width: calc(90vw / 7); /* عرض السداسية، عرض الشبكة مقسوم على 7 */
         height: calc(1.15 * (90vw / 7)); /* الارتفاع، 1.15 من العرض للحفاظ على شكل السداسي */
@@ -342,7 +341,7 @@
         font-size: calc(95vw / 28);
     }
     .row:not(:first-child) {
-        margin-top: calc(-0.25 * (1.15 * (95vw / 7))); /* نفس النسبة للشاشات الصغيرة */
+        margin-top: calc(-0.3 * (1.15 * (95vw / 7))); /* زيادة التداخل العمودي */
     }
     .row:nth-child(even) {
         margin-left: calc(0.5 * (95vw / 7));
@@ -351,22 +350,21 @@
         margin-right: calc(0.5 * (95vw / 7));
     }
     .row {
-        gap: calc(95vw / 150);
+        gap: calc(95vw / 300); /* تقليل الفجوة الأفقية أكثر */
     }
-    /* باقي التعريفات تبقى كما هي */
-            .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
-        .party-btn { font-size: 3.5vw; }
-        .party-text { font-size: 18vw; -webkit-text-stroke: 1.5px #000000; }
-        .buzzer-btn { width: 160px; height: 160px; font-size: 18px; }
-        .players-container { flex-direction: column; width: 90%; }
-        .team-list { width: 100%; margin-bottom: 10px; }
-        .question-section { width: 90%; flex-direction: column; }
-        .questions-container { width: 90%; max-height: 150px; }
-        .toggle-switch { width: 30px; height: 15px; }
-        .slider:before { height: 11px; width: 11px; }
-        input:checked + .slider:before { transform: translateX(15px); }
-        .toggle-label { font-size: 12px; }
-    }
+    .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
+    .party-btn { font-size: 3.5vw; }
+    .party-text { font-size: 18vw; -webkit-text-stroke: 1.5px #000000; }
+    .buzzer-btn { width: 160px; height: 160px; font-size: 18px; }
+    .players-container { flex-direction: column; width: 90%; }
+    .team-list { width: 100%; margin-bottom: 10px; }
+    .question-section { width: 90%; flex-direction: column; }
+    .questions-container { width: 90%; max-height: 150px; }
+    .toggle-switch { width: 30px; height: 15px; }
+    .slider:before { height: 11px; width: 11px; }
+    input:checked + .slider:before { transform: translateX(15px); }
+    .toggle-label { font-size: 12px; }
+}
 </style>
 </head>
 <body>
