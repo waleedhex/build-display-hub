@@ -41,7 +41,7 @@
     background: #000000;
     border-radius: 1vw;
     box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.3);
-    width: calc(7 * (90vw / 7) + 6 * (90vw / 500)); /* العرض يتناسب مع 7 خلايا + 6 فجوات صغيرة */
+    width: calc(7 * (90vw / 7) + 6 * (90vw / 400)); /* العرض يتناسب مع 7 خلايا + 6 فجوات */
     margin: 0 auto;
     overflow: hidden;
     display: flex;
@@ -52,12 +52,12 @@
 
 .row {
     display: flex;
-    gap: calc(90vw / 500); /* فجوة أفقية صغيرة جدًا */
+    gap: calc(90vw / 400); /* فجوة أفقية مناسبة */
     justify-content: center;
 }
 
 .row:not(:first-child) {
-    margin-top: calc(-0.27 * (1.15 * (90vw / 7))); /* تداخل عمودي لتشابك الخلايا */
+    margin-top: calc(-0.27 * (1.15 * (90vw / 7)) + (90vw / 400)); /* تداخل عمودي مع إضافة فجوة صغيرة */
 }
 
 .row:nth-child(even) {
@@ -73,7 +73,7 @@
     height: calc(1.15 * (90vw / 7)); /* الارتفاع ديناميكي بنسبة العرض */
     min-width: 40px; /* الحد الأدنى للعرض */
     min-height: 46px; /* الحد الأدنى للارتفاع */
-    max-width: 120px; /* زيادة الحد الأقصى للسماح بالتكبير */
+    max-width: 120px; /* الحد الأقصى للسماح بالتكبير */
     max-height: 138px; /* 1.15 * 120px */
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     display: flex;
@@ -86,6 +86,7 @@
     position: relative;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     background-color: #ffffe0;
+}
 }
     .hexagon.contestant-hex { cursor: default; }
     .hexagon::before {
@@ -330,7 +331,7 @@
     }
 @media (max-width: 600px) {
     .hex-grid {
-        width: calc(7 * (95vw / 7) + 6 * (95vw / 500)); /* العرض ديناميكي للشاشات الصغيرة */
+        width: calc(7 * (95vw / 7) + 6 * (95vw / 400)); /* العرض ديناميكي للشاشات الصغيرة */
     }
     .hexagon {
         width: calc(95vw / 7); /* العرض ديناميكي */
@@ -342,7 +343,7 @@
         font-size: calc(95vw / 28); /* حجم الخط ديناميكي */
     }
     .row:not(:first-child) {
-        margin-top: calc(-0.27 * (1.15 * (95vw / 7))); /* تداخل عمودي */
+        margin-top: calc(-0.27 * (1.15 * (95vw / 7)) + (95vw / 400)); /* تداخل عمودي مع فجوة صغيرة */
     }
     .row:nth-child(even) {
         margin-right: calc(0.5 * (95vw / 7));
@@ -351,7 +352,7 @@
         margin-left: calc(0.5 * (95vw / 7));
     }
     .row {
-        gap: calc(95vw / 500); /* فجوة أفقية صغيرة */
+        gap: calc(95vw / 400); /* فجوة أفقية متساوية مع العمودية */
     }
     .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
     .party-btn { font-size: 3.5vw; }
