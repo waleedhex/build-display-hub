@@ -41,7 +41,7 @@
     background: #000000;
     border-radius: 1vw;
     box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.3);
-    width: calc(7 * (90vw / 7) + 6 * (90vw / 200)); /* عرض الصندوق يشمل 7 خلايا + 6 فجوات */
+    width: calc(7 * (90vw / 7) + 6 * (90vw / 300)); /* العرض يتناسب مع 7 خلايا + 6 فجوات */
     margin: 0 auto;
     overflow: hidden;
     display: flex;
@@ -52,12 +52,12 @@
 
 .row {
     display: flex;
-    gap: calc(90vw / 200); /* فجوة أفقية صغيرة بين الخلايا */
+    gap: calc(90vw / 300); /* فجوة أفقية صغيرة */
     justify-content: center;
 }
 
 .row:not(:first-child) {
-    margin-top: calc(90vw / 200); /* فجوة عمودية صغيرة بين الصفوف */
+    margin-top: calc(90vw / 300); /* فجوة عمودية صغيرة متساوية مع الأفقية */
 }
 
 .row:nth-child(even) {
@@ -66,26 +66,27 @@
 
 .row:nth-child(odd) {
     margin-left: calc(0.5 * (90vw / 7)); /* إزاحة الصفوف الفردية إلى اليسار */
+}
 
-}    .hexagon {
-        width: calc(90vw / 7); /* عرض السداسية، عرض الشبكة مقسوم على 7 */
-        height: calc(1.15 * (90vw / 7)); /* الارتفاع، 1.15 من العرض للحفاظ على شكل السداسي */
-        min-width: 40px; /* الحد الأدنى للعرض */
-        min-height: 46px; /* الحد الأدنى للارتفاع */
-        max-width: 80px; /* الحد الأقصى للعرض */
-        max-height: 92px; /* الحد الأقصى للارتفاع */
-        clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: calc(90vw / 28); /* حجم الخط، نسبي لعرض الشبكة */
-        font-weight: bold;
-        cursor: pointer;
-        transition: background-color 0.3s;
-        position: relative;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        background-color: #ffffe0;
-    }
+.hexagon {
+    width: calc(90vw / 7); /* العرض ديناميكي حسب الشاشة */
+    height: calc(1.15 * (90vw / 7)); /* الارتفاع ديناميكي بنسبة العرض */
+    min-width: 40px; /* الحد الأدنى للعرض */
+    min-height: 46px; /* الحد الأدنى للارتفاع */
+    max-width: 80px; /* الحد الأقصى للعرض */
+    max-height: 92px; /* الحد الأقصى للارتفاع */
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: calc(90vw / 28); /* حجم الخط ديناميكي */
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background-color: #ffffe0;
+}
 
     .hexagon.contestant-hex { cursor: default; }
     .hexagon::before {
@@ -331,26 +332,28 @@
 
 @media (max-width: 600px) {
     .hex-grid {
-        width: calc(7 * (95vw / 7) + 6 * (95vw / 200)); /* عرض الصندوق للشاشات الصغيرة */
+        width: calc(7 * (95vw / 7) + 6 * (95vw / 300)); /* العرض ديناميكي للشاشات الصغيرة */
     }
     .hexagon {
-        width: calc(95vw / 7);
-        height: calc(1.15 * (95vw / 7));
-        min-width: 30px;
-        min-height: 34.5px;
-        font-size: calc(95vw / 28);
+        width: calc(95vw / 7); /* العرض ديناميكي */
+        height: calc(1.15 * (95vw / 7)); /* الارتفاع ديناميكي */
+        min-width: 30px; /* الحد الأدنى للشاشات الصغيرة */
+        min-height: 34.5px; /* الحد الأدنى للارتفاع */
+        max-width: 80px; /* الحد الأقصى للعرض */
+        max-height: 92px; /* الحد الأقصى للارتفاع */
+        font-size: calc(95vw / 28); /* حجم الخط ديناميكي */
     }
     .row:not(:first-child) {
-        margin-top: calc(95vw / 200); /* فجوة عمودية للشاشات الصغيرة */
+        margin-top: calc(95vw / 300); /* فجوة عمودية متساوية مع الأفقية */
     }
     .row:nth-child(even) {
-        margin-right: calc(0.5 * (95vw / 7)); /* إزاحة الصفوف الزوجية إلى اليمين */
+        margin-right: calc(0.5 * (95vw / 7));
     }
     .row:nth-child(odd) {
-        margin-left: calc(0.5 * (95vw / 7)); /* إزاحة الصفوف الفردية إلى اليسار */
+        margin-left: calc(0.5 * (95vw / 7));
     }
     .row {
-        gap: calc(95vw / 200); /* فجوة أفقية صغيرة */
+        gap: calc(95vw / 300); /* فجوة أفقية متساوية مع العمودية */
     }
     .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
     .party-btn { font-size: 3.5vw; }
