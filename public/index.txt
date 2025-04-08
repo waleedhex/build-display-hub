@@ -50,23 +50,23 @@
         position: relative;
     }
 
-    .row {
-        display: flex;
-        gap: calc(90vw / 100); /* المسافة الأفقية بين السداسيات، 1% من عرض الشبكة */
-        justify-content: center;
-    }
+.row {
+    display: flex;
+    gap: calc(90vw / 100); /* المسافة الأفقية بين السداسيات */
+    justify-content: center;
+}
 
-    .row:not(:first-child) {
-        margin-top: calc(-0.15 * (90vw / 7)); /* المسافة العمودية، -15% من ارتفاع السداسية */
-    }
+.row:not(:first-child) {
+    margin-top: calc(-0.25 * (1.15 * (90vw / 7))); /* تداخل عمودي يعادل 25% من ارتفاع السداسية */
+}
 
-    .row:nth-child(even) {
-        margin-left: calc(0.5 * (90vw / 7) + (90vw / 200)); /* نصف عرض السداسية + نصف المسافة الأفقية */
-    }
+.row:nth-child(even) {
+    margin-left: calc(0.5 * (90vw / 7)); /* نصف عرض السداسية فقط */
+}
 
-    .row:nth-child(odd) {
-        margin-right: calc(0.5 * (90vw / 7) + (90vw / 200)); /* نفس الشيء للصفوف الفردية */
-    }
+.row:nth-child(odd) {
+    margin-right: calc(0.5 * (90vw / 7)); /* نصف عرض السداسية فقط */
+}
 
     .hexagon {
         width: calc(90vw / 7); /* عرض السداسية، عرض الشبكة مقسوم على 7 */
@@ -330,30 +330,31 @@
         margin: 10px 0;
     }
 
-    @media (max-width: 600px) {
-        .hex-grid {
-            width: 95vw; /* عرض الشبكة يصبح أكبر نسبيًا على الشاشات الصغيرة */
-        }
-        .hexagon {
-            width: calc(95vw / 7); /* تعديل العرض بناءً على عرض الشبكة الجديد */
-            height: calc(1.15 * (95vw / 7)); /* تعديل الارتفاع نسبيًا */
-            min-width: 30px; /* تقليل الحد الأدنى للعرض */
-            min-height: 34.5px; /* تقليل الحد الأدنى للارتفاع */
-            font-size: calc(95vw / 28); /* تعديل حجم الخط نسبيًا */
-        }
-        .row:not(:first-child) {
-            margin-top: calc(-0.15 * (95vw / 7)); /* تعديل المسافة العمودية */
-        }
-        .row:nth-child(even) {
-            margin-left: calc(0.5 * (95vw / 7) + (95vw / 200)); /* تعديل الهامش الأفقي */
-        }
-        .row:nth-child(odd) {
-            margin-right: calc(0.5 * (95vw / 7) + (95vw / 200)); /* تعديل الهامش الأفقي */
-        }
-        .row {
-            gap: calc(95vw / 150); /* تقليل المسافة الأفقية نسبيًا */
-        }
-        .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
+@media (max-width: 600px) {
+    .hex-grid {
+        width: 95vw;
+    }
+    .hexagon {
+        width: calc(95vw / 7);
+        height: calc(1.15 * (95vw / 7));
+        min-width: 30px;
+        min-height: 34.5px;
+        font-size: calc(95vw / 28);
+    }
+    .row:not(:first-child) {
+        margin-top: calc(-0.25 * (1.15 * (95vw / 7))); /* نفس النسبة للشاشات الصغيرة */
+    }
+    .row:nth-child(even) {
+        margin-left: calc(0.5 * (95vw / 7));
+    }
+    .row:nth-child(odd) {
+        margin-right: calc(0.5 * (95vw / 7));
+    }
+    .row {
+        gap: calc(95vw / 150);
+    }
+    /* باقي التعريفات تبقى كما هي */
+            .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
         .party-btn { font-size: 3.5vw; }
         .party-text { font-size: 18vw; -webkit-text-stroke: 1.5px #000000; }
         .buzzer-btn { width: 160px; height: 160px; font-size: 18px; }
