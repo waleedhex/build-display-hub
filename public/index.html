@@ -41,7 +41,7 @@
     background: #000000;
     border-radius: 1vw;
     box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.3);
-    width: calc(7 * (90vw / 7) + 6 * (90vw / 300)); /* العرض يتناسب مع 7 خلايا + 6 فجوات */
+    width: calc(7 * (90vw / 7) + 6 * (90vw / 500)); /* العرض يتناسب مع 7 خلايا + 6 فجوات صغيرة */
     margin: 0 auto;
     overflow: hidden;
     display: flex;
@@ -52,12 +52,12 @@
 
 .row {
     display: flex;
-    gap: calc(90vw / 300); /* فجوة أفقية صغيرة */
+    gap: calc(90vw / 500); /* فجوة أفقية صغيرة جدًا */
     justify-content: center;
 }
 
 .row:not(:first-child) {
-    margin-top: calc(90vw / 300); /* فجوة عمودية صغيرة متساوية مع الأفقية */
+    margin-top: calc(-0.27 * (1.15 * (90vw / 7))); /* تداخل عمودي لتشابك الخلايا */
 }
 
 .row:nth-child(even) {
@@ -73,8 +73,8 @@
     height: calc(1.15 * (90vw / 7)); /* الارتفاع ديناميكي بنسبة العرض */
     min-width: 40px; /* الحد الأدنى للعرض */
     min-height: 46px; /* الحد الأدنى للارتفاع */
-    max-width: 80px; /* الحد الأقصى للعرض */
-    max-height: 92px; /* الحد الأقصى للارتفاع */
+    max-width: 120px; /* زيادة الحد الأقصى للسماح بالتكبير */
+    max-height: 138px; /* 1.15 * 120px */
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     display: flex;
     justify-content: center;
@@ -87,7 +87,6 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     background-color: #ffffe0;
 }
-
     .hexagon.contestant-hex { cursor: default; }
     .hexagon::before {
         content: '';
@@ -329,22 +328,21 @@
         font-size: 16px;
         margin: 10px 0;
     }
-
 @media (max-width: 600px) {
     .hex-grid {
-        width: calc(7 * (95vw / 7) + 6 * (95vw / 300)); /* العرض ديناميكي للشاشات الصغيرة */
+        width: calc(7 * (95vw / 7) + 6 * (95vw / 500)); /* العرض ديناميكي للشاشات الصغيرة */
     }
     .hexagon {
         width: calc(95vw / 7); /* العرض ديناميكي */
         height: calc(1.15 * (95vw / 7)); /* الارتفاع ديناميكي */
         min-width: 30px; /* الحد الأدنى للشاشات الصغيرة */
         min-height: 34.5px; /* الحد الأدنى للارتفاع */
-        max-width: 80px; /* الحد الأقصى للعرض */
-        max-height: 92px; /* الحد الأقصى للارتفاع */
+        max-width: 120px; /* الحد الأقصى للسماح بالتكبير */
+        max-height: 138px; /* 1.15 * 120px */
         font-size: calc(95vw / 28); /* حجم الخط ديناميكي */
     }
     .row:not(:first-child) {
-        margin-top: calc(95vw / 300); /* فجوة عمودية متساوية مع الأفقية */
+        margin-top: calc(-0.27 * (1.15 * (95vw / 7))); /* تداخل عمودي */
     }
     .row:nth-child(even) {
         margin-right: calc(0.5 * (95vw / 7));
@@ -353,7 +351,7 @@
         margin-left: calc(0.5 * (95vw / 7));
     }
     .row {
-        gap: calc(95vw / 300); /* فجوة أفقية متساوية مع العمودية */
+        gap: calc(95vw / 500); /* فجوة أفقية صغيرة */
     }
     .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
     .party-btn { font-size: 3.5vw; }
