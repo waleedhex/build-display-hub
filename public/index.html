@@ -37,11 +37,11 @@
     .host-screen.active, .contestant-screen.active { display: flex; }
 
 .hex-grid {
-    padding: 0; /* إزالة الهوامش الداخلية */
+    padding: 0;
     background: #000000;
     border-radius: 1vw;
     box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.3);
-    width: calc(7 * (90vw / 7) + 6 * (90vw / 200)); /* العرض يتناسب مع 7 خلايا + 6 فجوات */
+    width: calc(7 * (90vw / 7) + 6 * (90vw / 200)); /* عرض الصندوق يشمل 7 خلايا + 6 فجوات */
     margin: 0 auto;
     overflow: hidden;
     display: flex;
@@ -52,20 +52,21 @@
 
 .row {
     display: flex;
-    gap: calc(90vw / 200); /* فجوة أفقية صغيرة */
+    gap: calc(90vw / 200); /* فجوة أفقية صغيرة بين الخلايا */
     justify-content: center;
 }
 
 .row:not(:first-child) {
-    margin-top: calc(-0.27 * (1.15 * (90vw / 7))); /* تداخل عمودي معتدل */
+    margin-top: calc(90vw / 200); /* فجوة عمودية صغيرة بين الصفوف */
 }
 
 .row:nth-child(even) {
-    margin-left: calc(0.5 * (90vw / 7));
+    margin-right: calc(0.5 * (90vw / 7)); /* إزاحة الصفوف الزوجية إلى اليمين */
 }
 
 .row:nth-child(odd) {
-    margin-right: calc(0.5 * (90vw / 7));
+    margin-left: calc(0.5 * (90vw / 7)); /* إزاحة الصفوف الفردية إلى اليسار */
+
 }    .hexagon {
         width: calc(90vw / 7); /* عرض السداسية، عرض الشبكة مقسوم على 7 */
         height: calc(1.15 * (90vw / 7)); /* الارتفاع، 1.15 من العرض للحفاظ على شكل السداسي */
@@ -330,7 +331,7 @@
 
 @media (max-width: 600px) {
     .hex-grid {
-        width: calc(7 * (95vw / 7) + 6 * (95vw / 200)); /* العرض يتناسب مع الخلايا والفجوات */
+        width: calc(7 * (95vw / 7) + 6 * (95vw / 200)); /* عرض الصندوق للشاشات الصغيرة */
     }
     .hexagon {
         width: calc(95vw / 7);
@@ -340,13 +341,13 @@
         font-size: calc(95vw / 28);
     }
     .row:not(:first-child) {
-        margin-top: calc(-0.27 * (1.15 * (95vw / 7))); /* تداخل عمودي معتدل */
+        margin-top: calc(95vw / 200); /* فجوة عمودية للشاشات الصغيرة */
     }
     .row:nth-child(even) {
-        margin-left: calc(0.5 * (95vw / 7));
+        margin-right: calc(0.5 * (95vw / 7)); /* إزاحة الصفوف الزوجية إلى اليمين */
     }
     .row:nth-child(odd) {
-        margin-right: calc(0.5 * (95vw / 7));
+        margin-left: calc(0.5 * (95vw / 7)); /* إزاحة الصفوف الفردية إلى اليسار */
     }
     .row {
         gap: calc(95vw / 200); /* فجوة أفقية صغيرة */
