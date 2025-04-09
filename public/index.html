@@ -52,12 +52,12 @@
 
 .row {
     display: flex;
-    gap: calc(90vw / 200); /* فجوة أفقية مناسبة */
+    gap: calc(90vw / 1000); /* فجوة أفقية مناسبة */
     justify-content: center;
 }
 
 .row:not(:first-child) {
-    margin-top: calc(90vw / 50); /* تداخل عمودي مع فجوة متساوية مع الأفقية */
+    margin-top: calc(90vw / 100); /* تداخل عمودي مع فجوة متساوية مع الأفقية */
 }
 
 .row:nth-child(even) {
@@ -338,7 +338,7 @@
         font-size: calc(95vw / 28); /* حجم الخط ديناميكي */
     }
     .row:not(:first-child) {
-        margin-top: calc(95vw / 50); /* تداخل عمودي مع فجوة متساوية */
+        margin-top: calc(95vw / 150); /* تداخل عمودي مع فجوة متساوية */
     }
     .row:nth-child(even) {
         margin-right: calc(0.5 * (95vw / 7) + (95vw / 200));
@@ -347,7 +347,7 @@
         margin-left: calc(0.5 * (95vw / 7) + (95vw / 200));
     }
     .row {
-        gap: calc(95vw / 200); /* فجوة أفقية متساوية مع العمودية */
+        gap: calc(95vw / 1000); /* فجوة أفقية متساوية مع العمودية */
     }
     .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
     .party-btn { font-size: 3.5vw; }
