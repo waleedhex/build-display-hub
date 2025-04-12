@@ -3,7 +3,7 @@ const { Server, WebSocket } = require('ws');
 const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs').promises;
-const { v4: uuidv4 } = require('uuid'); // لتوليد الرموز المؤقتة
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -21,8 +21,8 @@ const wss = new Server({ server });
 const MAX_CODES_PER_REQUEST = 5000;
 
 let sessions = new Map();
-let clients = new Map(); // Map لتخزين العملاء بدل المصفوفة
-let tokens = new Map(); // لتخزين الرموز المؤقتة
+let clients = new Map();
+let tokens = new Map();
 
 const colorSets = [
     { red: '#ff4081', green: '#81c784' },
@@ -62,7 +62,6 @@ async function initDatabase() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `),
-            // جدول لتخزين الجلسات
             db.query(`
                 CREATE TABLE IF NOT EXISTS sessions (
                     session_id TEXT PRIMARY KEY,
@@ -70,7 +69,6 @@ async function initDatabase() {
                     last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             `),
-            // جدول لتخزين الرموز المؤقتة
             db.query(`
                 CREATE TABLE IF NOT EXISTS tokens (
                     token TEXT PRIMARY KEY,
@@ -171,9 +169,9 @@ async function loadSession(sessionId) {
 
 async function generateToken(sessionId, playerName, role) {
     const token = uuidv4();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // صلاحية 24 ساعة (أو حسب مدة الجلسة)
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // صلاحية 7 أيام
     await db.query(
-        'INSERT INTO tokens (token, session_id, player_name, role, expires_at) VALUES ($1, $2, $3, $4, $5)',
+        'INSERT INTO tokens (token, session_id, player_name, role, created_at, expires_at) VALUES ($1, $2, $3, $4, NOW(), $5)',
         [token, sessionId, playerName, role, expiresAt]
     );
     return token;
@@ -185,7 +183,13 @@ async function verifyToken(token) {
             'SELECT session_id, player_name, role FROM tokens WHERE token = $1 AND expires_at > NOW()',
             [token]
         );
-        return result.rows.length > 0 ? result.rows[0] : null;
+        if (result.rows.length > 0) {
+            console.log('Token verified successfully:', token);
+            return result.rows[0];
+        } else {
+            console.log('Token invalid or expired:', token);
+            return null;
+        }
     } catch (err) {
         console.error('Error verifying token:', err);
         return null;
@@ -211,7 +215,7 @@ async function cleanupSessions() {
         } catch (err) {
             console.error('Error cleaning up sessions:', err);
         }
-    }, 5 * 60 * 1000); // كل 5 دقايق
+    }, 5 * 60 * 1000);
 }
 
 function generateRandomCode() {
@@ -271,7 +275,7 @@ function startPingPong() {
                 handleClientDisconnect(client);
             }
         });
-    }, 10000); // كل 10 ثواني
+    }, 10000);
 }
 
 async function handleClientDisconnect(client) {
@@ -290,7 +294,7 @@ async function handleClientDisconnect(client) {
                 await saveSession(client.sessionId, session);
                 broadcast(client.sessionId, { type: 'updateTeams', data: session.teams }, null);
             }
-        }, 30000); // 30 ثانية
+        }, 30000);
     }
     clients.delete(client.clientId);
 }
@@ -301,7 +305,7 @@ wss.on('connection', (ws) => {
     ws.clientId = clientId;
 
     ws.on('pong', () => {
-        // تلقي Pong من العميل
+        console.log('Received pong from client');
     });
 
     ws.on('message', async (message) => {
@@ -749,10 +753,6 @@ wss.on('connection', (ws) => {
                     try {
                         const timestamp = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
                         const filename = `backup_${timestamp}.sql`;
-                        const backupDir = path.join(__dirname, 'backups');
-                        await fs.mkdir(backupDir, { recursive: true });
-                        const filepath = path.join(backupDir, filename);
-
                         let sqlDump = '-- Backup generated on ' + new Date().toISOString() + '\n\n';
 
                         const tables = ['subscribers', 'general_questions', 'session_questions'];
@@ -778,15 +778,7 @@ wss.on('connection', (ws) => {
                             }
                         }
 
-                        await fs.writeFile(filepath, sqlDump);
-                        ws.send(JSON.stringify({ type: 'backupCreated', data: { filename } }));
-                        setTimeout(async () => {
-                            try {
-                                await fs.unlink(filepath);
-                            } catch (err) {
-                                console.error('Error deleting backup file:', err);
-                            }
-                        }, 10 * 60 * 1000); // حذف بعد 10 دقايق
+                        ws.send(JSON.stringify({ type: 'backupCreated', data: { filename, content: sqlDump } }));
                     } catch (err) {
                         ws.send(JSON.stringify({ type: 'adminError', data: 'خطأ في إنشاء النسخة الاحتياطية: ' + err.message }));
                     }
@@ -798,6 +790,10 @@ wss.on('connection', (ws) => {
                 if (adminCheckRestore.rows.length > 0) {
                     try {
                         const sqlContent = data.sqlContent;
+                        if (!sqlContent.includes('INSERT INTO') && !sqlContent.includes('CREATE TABLE')) {
+                            ws.send(JSON.stringify({ type: 'adminError', data: 'الملف لا يحتوي على أوامر SQL صالحة!' }));
+                            return;
+                        }
                         const client = await db.connect();
                         try {
                             await client.query('BEGIN');

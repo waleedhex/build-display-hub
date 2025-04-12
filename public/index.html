@@ -11,7 +11,6 @@
             padding: 0;
             font-family: 'Tahoma', sans-serif;
         }
-        /* منع تظليل النص لشاشة المضيف والمتسابق فقط */
         .host-screen, .contestant-screen {
             user-select: none;
         }
@@ -291,8 +290,11 @@
         }
         .error-message {
             color: red;
-            font-size: 16px;
-            margin: 10px 0;
+            font-weight: bold;
+        }
+        .success-message {
+            color: green;
+            font-weight: bold;
         }
         .toggle-switch {
             position: relative;
@@ -373,11 +375,11 @@
             margin: 10px 0;
         }
         .backup-btn {
-            background-color: #FFC107; /* لون أصفر لزرّي النسخ والاستعادة */
+            background-color: #FFC107;
             color: #000;
         }
         .backup-btn:hover {
-            background-color: #FFA000; /* لون أغمق عند الهوفر */
+            background-color: #FFA000;
         }
         @media (max-width: 600px) {
             .hex-grid {
@@ -637,9 +639,13 @@
                     document.getElementById('phoneError').textContent = '';
                     hideConnectionLost();
                     if (token) {
+                        console.log('Attempting to reconnect with token:', token);
                         ws.send(JSON.stringify({ type: 'reconnect', data: { token } }));
                     } else if (phoneNumber && playerName) {
+                        console.log('Joining with phoneNumber and playerName:', phoneNumber, playerName);
                         ws.send(JSON.stringify({ type: 'join', data: { role: isHost ? 'host' : 'contestant', name: playerName, phoneNumber } }));
+                    } else {
+                        console.log('No token or phoneNumber, staying on phone screen');
                     }
                 };
                 ws.onerror = (error) => {
@@ -655,6 +661,7 @@
                             connectWebSocket();
                         }, reconnectInterval);
                     } else {
+                        console.log('Max reconnection attempts reached, resetting to phone screen');
                         document.getElementById('phoneError').textContent = 'تعذر الاتصال، حاول مرة أخرى لاحقًا.';
                         showConnectionLost();
                         resetToPhoneScreen();
@@ -662,7 +669,7 @@
                 };
                 ws.onmessage = handleMessages;
                 ws.onpong = () => {
-                    // تلقي Pong من الخادم
+                    console.log('Received pong from server');
                 };
             } catch (error) {
                 console.error('Failed to initialize WebSocket:', error);
@@ -675,10 +682,12 @@
             if (!connectionLostDiv) {
                 connectionLostDiv = document.createElement('div');
                 connectionLostDiv.id = 'connectionLost';
-                connectionLostDiv.style.cssText = 'display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); color: white; display: flex; justify-content: center; align-items: center; flex-direction: column;';
+                connectionLostDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); color: white; display: flex; justify-content: center; align-items: center; flex-direction: column;';
                 connectionLostDiv.innerHTML = `
                     <p>تم فقدان الاتصال بالخادم</p>
+                    <p>يرجى إعادة المحاولة أو إدخال رمز جلسة جديد</p>
                     <button onclick="reconnectManually()">إعادة المحاولة</button>
+                    <button onclick="resetToPhoneScreen()" style="margin-top: 10px;">إدخال رمز جديد</button>
                 `;
                 document.body.appendChild(connectionLostDiv);
             }
@@ -725,10 +734,14 @@
                 }
             } else if (type === 'codeError') {
                 document.getElementById('phoneError').textContent = data;
+                document.getElementById('phoneError').className = 'error-message';
             } else if (type === 'init') {
                 token = data.token || token;
                 if (token) {
                     localStorage.setItem('sessionToken', token);
+                    console.log('Token saved to localStorage:', token);
+                } else {
+                    console.error('No token received in init response');
                 }
                 defaultQuestions = data.questions || {};
                 currentColorSetIndex = data.colorSetIndex;
@@ -740,24 +753,29 @@
                 const generatedCodesDiv = document.getElementById('generatedCodes');
                 generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
                 document.getElementById('adminStatus').textContent = 'تم توليد الرموز بنجاح';
+                document.getElementById('adminStatus').className = 'success-message';
                 document.getElementById('copyCodesButton').style.display = 'inline';
                 updateCodesCount();
             } else if (type === 'manualCodeAdded') {
                 document.getElementById('generatedCodes').innerHTML = `تم إضافة الرمز: ${data}`;
                 document.getElementById('adminStatus').textContent = 'تمت الإضافة بنجاح';
+                document.getElementById('adminStatus').className = 'success-message';
                 document.getElementById('copyCodesButton').style.display = 'none';
                 updateCodesCount();
             } else if (type === 'codeDeleted') {
                 document.getElementById('generatedCodes').innerHTML = `تم حذف الرمز: ${data}`;
                 document.getElementById('adminStatus').textContent = 'تم الحذف بنجاح';
+                document.getElementById('adminStatus').className = 'success-message';
                 document.getElementById('copyCodesButton').style.display = 'none';
                 updateCodesCount();
             } else if (type === 'codesDeleted') {
                 document.getElementById('adminStatus').textContent = `تم حذف ${data.length} رمز`;
+                document.getElementById('adminStatus').className = 'success-message';
                 document.getElementById('generatedCodes').innerHTML = '';
                 updateCodesCount();
             } else if (type === 'adminError') {
                 document.getElementById('adminError').textContent = data;
+                document.getElementById('adminError').className = 'error-message';
                 document.getElementById('adminStatus').textContent = '';
             } else if (type === 'generalQuestions') {
                 displayGeneralQuestions(data);
@@ -766,27 +784,36 @@
                 displaySessionQuestions(data);
             } else if (type === 'generalQuestionAdded' || type === 'generalQuestionsAdded') {
                 document.getElementById('adminStatus').textContent = data;
+                document.getElementById('adminStatus').className = 'success-message';
                 fetchGeneralQuestions();
             } else if (type === 'generalQuestionsDeleted') {
                 document.getElementById('adminStatus').textContent = 'تم حذف الأسئلة المحددة';
+                document.getElementById('adminStatus').className = 'success-message';
                 fetchGeneralQuestions();
             } else if (type === 'addedToGeneral') {
                 document.getElementById('adminStatus').textContent = 'تم إضافة الأسئلة المحددة إلى العام';
+                document.getElementById('adminStatus').className = 'success-message';
                 fetchGeneralQuestions();
                 fetchSessionQuestions();
             } else if (type === 'codesCount') {
                 document.getElementById('codesCount').textContent = `إجمالي عدد الرموز: ${data}`;
             } else if (type === 'backupCreated') {
+                const { filename, content } = data;
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = `/backups/${data.filename}`;
-                link.download = data.filename;
+                link.href = url;
+                link.download = filename;
                 link.style.display = 'none';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
                 document.getElementById('adminStatus').textContent = 'تم إنشاء النسخة الاحتياطية، الملف محفوظ';
+                document.getElementById('adminStatus').className = 'success-message';
             } else if (type === 'restoreSuccess') {
                 document.getElementById('adminStatus').textContent = data;
+                document.getElementById('adminStatus').className = 'success-message';
                 document.getElementById('restoreFile').value = '';
             } else if (type === 'updateHexagon') {
                 const hex = document.querySelector(`#${isHost ? 'hexGridHost' : 'hexGridContestant'} .changeable[data-letter="${data.letter}"]`);
@@ -857,9 +884,11 @@
                     ws.send(JSON.stringify({ type: 'verifyPhone', data: { phoneNumber: input } }));
                 } else {
                     document.getElementById('phoneError').textContent = 'فشل الاتصال بالخادم';
+                    document.getElementById('phoneError').className = 'error-message';
                 }
             } else {
                 document.getElementById('phoneError').textContent = 'الرجاء إدخال رمز الجلسة!';
+                document.getElementById('phoneError').className = 'error-message';
             }
         });
 
@@ -875,6 +904,7 @@
                 }
             } else {
                 document.getElementById('welcomeError').textContent = 'الرجاء إدخال اسمك!';
+                document.getElementById('welcomeError').className = 'error-message';
             }
         });
 
@@ -890,6 +920,7 @@
                 }
             } else {
                 document.getElementById('welcomeError').textContent = 'الرجاء إدخال اسمك!';
+                document.getElementById('welcomeError').className = 'error-message';
             }
         });
 
@@ -901,6 +932,7 @@
                 ws.send(JSON.stringify({ type: 'generateCodes', data: { count, phoneNumber } }));
             } else {
                 document.getElementById('adminError').textContent = 'أدخل عدد صحيح بين 1 و5000!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -911,6 +943,7 @@
                 document.getElementById('manualCode').value = '';
             } else {
                 document.getElementById('adminError').textContent = 'أدخل رمزًا صحيحًا!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -921,6 +954,7 @@
                 document.getElementById('deleteCode').value = '';
             } else {
                 document.getElementById('adminError').textContent = 'أدخل رمزًا صحيحًا لحذفه!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -932,6 +966,7 @@
                 document.getElementById('deleteCodesList').value = '';
             } else {
                 document.getElementById('adminError').textContent = 'أدخل قائمة رموز صحيحة!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -942,6 +977,7 @@
                 document.getElementById('deleteLatestCount').value = '';
             } else {
                 document.getElementById('adminError').textContent = 'أدخل عدد صحيح أكبر من 0!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -949,9 +985,11 @@
             const codesText = document.getElementById('generatedCodes').innerText.replace('الرموز الجديدة:\n', '');
             navigator.clipboard.writeText(codesText).then(() => {
                 document.getElementById('adminStatus').textContent = 'تم النسخ بنجاح!';
+                document.getElementById('adminStatus').className = 'success-message';
             }).catch(err => {
                 console.error('فشل النسخ:', err);
                 document.getElementById('adminError').textContent = 'فشل نسخ الرموز!';
+                document.getElementById('adminError').className = 'error-message';
             });
         });
 
@@ -966,6 +1004,7 @@
                 document.getElementById('generalQuestionLetter').value = '';
             } else {
                 document.getElementById('adminError').textContent = 'يرجى إدخال السؤال والإجابة والحرف!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -986,6 +1025,7 @@
                 fileInput.value = '';
             } else {
                 document.getElementById('adminError').textContent = 'يرجى اختيار ملف Excel!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -996,6 +1036,7 @@
                 ws.send(JSON.stringify({ type: 'deleteGeneralQuestions', data: { ids: selected, phoneNumber } }));
             } else {
                 document.getElementById('adminError').textContent = 'يرجى تحديد أسئلة لحذفها!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -1006,6 +1047,7 @@
                 ws.send(JSON.stringify({ type: 'addToGeneral', data: { questions: selected, phoneNumber } }));
             } else {
                 document.getElementById('adminError').textContent = 'يرجى تحديد أسئلة لإضافتها!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -1023,6 +1065,7 @@
                 ws.send(JSON.stringify({ type: 'backup', data: { phoneNumber } }));
             } else {
                 document.getElementById('adminError').textContent = 'فشل الاتصال بالخادم!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -1045,6 +1088,7 @@
                 reader.readAsText(file);
             } else {
                 document.getElementById('adminError').textContent = 'يرجى اختيار ملف SQL صالح!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
 
@@ -1299,10 +1343,150 @@
                 document.getElementById('newAnswerInput').value = '';
                 document.getElementById('questionLetter').value = '';
                 document.getElementById('adminStatus').textContent = 'تم إضافة السؤال بنجاح!';
+                document.getElementById('adminStatus').className = 'success-message';
             } else {
                 document.getElementById('adminError').textContent = 'يرجى إدخال السؤال والإجابة وحرف السؤال!';
+                document.getElementById('adminError').className = 'error-message';
             }
         });
+
+        function updateGrid(hexagons, lettersOrder, gridId) {
+            const gridHexagons = document.querySelectorAll(`#${gridId} .changeable`);
+            gridHexagons.forEach((hex, index) => {
+                const letter = lettersOrder[index];
+                hex.textContent = letter;
+                hex.dataset.letter = letter;
+                hex.style.backgroundColor = hexagons[letter].color;
+                hex.dataset.clickCount = hexagons[letter].clickCount;
+            });
+            const redHexagons = document.querySelectorAll(`#${gridId} .red-fixed`);
+            const greenHexagons = document.querySelectorAll(`#${gridId} .green-fixed`);
+            const currentSet = colorSets[currentColorSetIndex];
+            redHexagons.forEach(hex => {
+                hex.style.backgroundColor = isSwapped ? currentSet.green : currentSet.red;
+            });
+            greenHexagons.forEach(hex => {
+                hex.style.backgroundColor = isSwapped ? currentSet.red : currentSet.green;
+            });
+        }
+
+        function updateBuzzer(buzzer) {
+            const buzzerButton = document.getElementById('buzzerButton');
+            const info = document.getElementById(isHost ? 'buzzerInfo' : 'contestantBuzzerInfo');
+            if (buzzer.message) {
+                info.textContent = buzzer.message;
+                if (!isHost) buzzerButton.disabled = false;
+            } else if (buzzer.active) {
+                info.textContent = `${buzzer.player} ضغط الجرس!`;
+                if (!isHost) buzzerButton.disabled = true;
+            } else {
+                info.textContent = '';
+                if (!isHost) buzzerButton.disabled = false;
+            }
+        }
+
+        function updateTeams(teams) {
+            console.log('تحديث الفرق باستخدام:', teams);
+            ['red', 'green'].forEach(team => {
+                const teamList = document.getElementById(`${team}TeamList`);
+                teamList.innerHTML = `<h3>الفريق ${team === 'red' ? 'الأحمر' : 'الأخضر'}</h3>`;
+                if (teams[team] && Array.isArray(teams[team])) {
+                    teams[team].forEach(name => {
+                        if (!teamList.querySelector(`.player-bubble[data-name="${name}"]`)) {
+                            const bubble = document.createElement('div');
+                            bubble.className = `player-bubble ${team}`;
+                            bubble.textContent = name;
+                            bubble.dataset.name = name;
+                            if (isHost) {
+                                bubble.draggable = true;
+                                bubble.addEventListener('dragstart', drag);
+                            }
+                            teamList.appendChild(bubble);
+                        }
+                    });
+                }
+                if (!isHost && playerName && teams[team].includes(playerName)) {
+                    document.getElementById('teamInfo').textContent = `أنت في الفريق ${team === 'red' ? 'الأحمر' : 'الأخضر'}`;
+                }
+            });
+        }
+
+        function updateTeamsFromDOM() {
+            const teams = { red: [], green: [] };
+            ['red', 'green'].forEach(team => {
+                document.querySelectorAll(`#${team}TeamList .player-bubble`).forEach(bubble => {
+                    teams[team].push(bubble.dataset.name);
+                });
+            });
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'updateTeams', data: { teams, phoneNumber } }));
+            }
+        }
+
+        function drag(ev) {
+            ev.dataTransfer.setData('text', ev.target.dataset.name);
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            const name = ev.dataTransfer.getData('text');
+            const oldTeam = document.querySelector(`.player-bubble[data-name="${name}"]`).parentElement.id === 'redTeamList' ? 'red' : 'green';
+            const newTeam = ev.target.closest('#redTeamList') ? 'red' : 'green';
+            if (oldTeam !== newTeam) {
+                const bubble = document.querySelector(`.player-bubble[data-name="${name}"]`);
+                bubble.classList.remove(oldTeam);
+                bubble.classList.add(newTeam);
+                ev.target.closest('.team-list').appendChild(bubble);
+                updateTeamsFromDOM();
+            }
+        }
+
+        function updateCodesCount() {
+            if (isAdmin && ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'getCodesCount', data: { phoneNumber } }));
+            }
+        }
+
+        function fetchGeneralQuestions() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const letter = document.getElementById('generalLetterFilter').value;
+                ws.send(JSON.stringify({ type: 'getGeneralQuestions', data: { letter, phoneNumber } }));
+            }
+        }
+
+        function fetchSessionQuestions() {
+            const letter = document.getElementById('sessionLetterFilter').value;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'getSessionQuestions', data: { letter, phoneNumber } }));
+            }
+        }
+
+        function displayGeneralQuestions(questions) {
+            const list = document.getElementById('generalQuestionsList');
+            list.innerHTML = '';
+            questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `<input type="checkbox" data-id="${q.id}"> ${q.letter} - ${q.question} - ${q.answer}`;
+                list.appendChild(div);
+            });
+            document.getElementById('questionsCount').textContent = `عدد الأسئلة العامة: ${questions.length}`;
+        }
+
+        function displaySessionQuestions(questions) {
+            const list = document.getElementById('sessionQuestionsList');
+            list.innerHTML = '';
+            questions.forEach(q => {
+                const div = document.createElement('div');
+                div.className = 'question-item';
+                div.innerHTML = `<input type="checkbox" data-letter="${q.letter}" data-question="${q.question}" data-answer="${q.answer}"> ${q.letter} - ${q.question} - ${q.answer}`;
+                list.appendChild(div);
+            });
+        }
 
         function updateGrid(hexagons, lettersOrder, gridId) {
             const gridHexagons = document.querySelectorAll(`#${gridId} .changeable`);
