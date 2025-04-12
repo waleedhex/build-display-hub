@@ -3,6 +3,7 @@ const { Server, WebSocket } = require('ws');
 const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs').promises;
+const { v4: uuidv4 } = require('uuid'); // لتوليد الرموز المؤقتة
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -20,7 +21,8 @@ const wss = new Server({ server });
 const MAX_CODES_PER_REQUEST = 5000;
 
 let sessions = new Map();
-let clients = [];
+let clients = new Map(); // Map لتخزين العملاء بدل المصفوفة
+let tokens = new Map(); // لتخزين الرموز المؤقتة
 
 const colorSets = [
     { red: '#ff4081', green: '#81c784' },
@@ -58,6 +60,25 @@ async function initDatabase() {
                     question TEXT NOT NULL,
                     answer TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `),
+            // جدول لتخزين الجلسات
+            db.query(`
+                CREATE TABLE IF NOT EXISTS sessions (
+                    session_id TEXT PRIMARY KEY,
+                    data JSONB NOT NULL,
+                    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `),
+            // جدول لتخزين الرموز المؤقتة
+            db.query(`
+                CREATE TABLE IF NOT EXISTS tokens (
+                    token TEXT PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    player_name TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP NOT NULL
                 )
             `)
         ]);
@@ -127,6 +148,72 @@ async function loadQuestions(sessionId = null, useGeneral = true) {
     }
 }
 
+async function saveSession(sessionId, sessionData) {
+    try {
+        await db.query(
+            'INSERT INTO sessions (session_id, data, last_activity) VALUES ($1, $2, NOW()) ON CONFLICT (session_id) DO UPDATE SET data = $2, last_activity = NOW()',
+            [sessionId, JSON.stringify(sessionData)]
+        );
+    } catch (err) {
+        console.error('Error saving session:', err);
+    }
+}
+
+async function loadSession(sessionId) {
+    try {
+        const result = await db.query('SELECT data FROM sessions WHERE session_id = $1', [sessionId]);
+        return result.rows.length > 0 ? JSON.parse(result.rows[0].data) : null;
+    } catch (err) {
+        console.error('Error loading session:', err);
+        return null;
+    }
+}
+
+async function generateToken(sessionId, playerName, role) {
+    const token = uuidv4();
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // صلاحية 24 ساعة (أو حسب مدة الجلسة)
+    await db.query(
+        'INSERT INTO tokens (token, session_id, player_name, role, expires_at) VALUES ($1, $2, $3, $4, $5)',
+        [token, sessionId, playerName, role, expiresAt]
+    );
+    return token;
+}
+
+async function verifyToken(token) {
+    try {
+        const result = await db.query(
+            'SELECT session_id, player_name, role FROM tokens WHERE token = $1 AND expires_at > NOW()',
+            [token]
+        );
+        return result.rows.length > 0 ? result.rows[0] : null;
+    } catch (err) {
+        console.error('Error verifying token:', err);
+        return null;
+    }
+}
+
+async function cleanupSessions() {
+    setInterval(async () => {
+        try {
+            await db.query(
+                'DELETE FROM sessions WHERE last_activity < NOW() - INTERVAL \'10 minutes\''
+            );
+            await db.query(
+                'DELETE FROM tokens WHERE expires_at < NOW() OR session_id NOT IN (SELECT session_id FROM sessions)'
+            );
+            sessions.forEach((_, sessionId) => {
+                db.query('SELECT last_activity FROM sessions WHERE session_id = $1', [sessionId]).then(result => {
+                    if (result.rows.length === 0) {
+                        sessions.delete(sessionId);
+                    }
+                });
+            });
+        } catch (err) {
+            console.error('Error cleaning up sessions:', err);
+        }
+    }, 5 * 60 * 1000); // كل 5 دقايق
+}
+
 function generateRandomCode() {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let code = '';
@@ -168,29 +255,105 @@ async function generateMultipleCodes(count) {
 }
 
 function broadcast(sessionId, data, excludeClient) {
-    clients.forEach(client => {
+    clients.forEach((client, clientId) => {
         if (client.sessionId === sessionId && client.ws.readyState === WebSocket.OPEN && (!excludeClient || client.ws !== excludeClient.ws)) {
             client.ws.send(JSON.stringify(data));
         }
     });
 }
 
+function startPingPong() {
+    setInterval(() => {
+        clients.forEach((client, clientId) => {
+            if (client.ws.readyState === WebSocket.OPEN) {
+                client.ws.ping();
+            } else {
+                handleClientDisconnect(client);
+            }
+        });
+    }, 10000); // كل 10 ثواني
+}
+
+async function handleClientDisconnect(client) {
+    const session = sessions.get(client.sessionId);
+    if (client.role === 'contestant' && session) {
+        session.disconnectedClients = session.disconnectedClients || {};
+        session.disconnectedClients[client.name] = {
+            team: session.teams.red.includes(client.name) ? 'red' : 'green',
+            timestamp: Date.now()
+        };
+        setTimeout(async () => {
+            if (session.disconnectedClients[client.name]) {
+                session.teams.red = session.teams.red.filter(name => name !== client.name);
+                session.teams.green = session.teams.green.filter(name => name !== client.name);
+                delete session.disconnectedClients[client.name];
+                await saveSession(client.sessionId, session);
+                broadcast(client.sessionId, { type: 'updateTeams', data: session.teams }, null);
+            }
+        }, 30000); // 30 ثانية
+    }
+    clients.delete(client.clientId);
+}
+
 wss.on('connection', (ws) => {
     console.log('New WebSocket connection established');
+    const clientId = uuidv4();
+    ws.clientId = clientId;
+
+    ws.on('pong', () => {
+        // تلقي Pong من العميل
+    });
 
     ws.on('message', async (message) => {
         console.log('Received WebSocket message:', message.toString());
         const { type, data } = JSON.parse(message);
 
         switch (type) {
+            case 'reconnect':
+                const tokenData = await verifyToken(data.token);
+                if (tokenData) {
+                    ws.sessionId = tokenData.session_id;
+                    ws.playerName = tokenData.player_name;
+                    const role = tokenData.role;
+                    const session = sessions.get(ws.sessionId) || await loadSession(ws.sessionId);
+                    if (session) {
+                        const client = { ws, role, name: ws.playerName, sessionId: ws.sessionId, clientId };
+                        clients.set(clientId, client);
+                        if (role === 'host') {
+                            const existingHost = Array.from(clients.values()).find(c => c.sessionId === ws.sessionId && c.role === 'host');
+                            if (existingHost) {
+                                ws.send(JSON.stringify({ type: 'joinError', data: 'يوجد مضيف بالفعل في هذه الجلسة!' }));
+                                clients.delete(clientId);
+                                return;
+                            }
+                            ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: session.questions } }));
+                        } else {
+                            if (!session.teams.red.includes(ws.playerName) && !session.teams.green.includes(ws.playerName)) {
+                                const redCount = session.teams.red.length;
+                                const greenCount = session.teams.green.length;
+                                const team = redCount <= greenCount ? 'red' : 'green';
+                                session.teams[team].push(ws.playerName);
+                                await saveSession(ws.sessionId, session);
+                            }
+                            ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {} } }));
+                            broadcast(ws.sessionId, { type: 'updateTeams', data: session.teams }, null);
+                        }
+                    } else {
+                        ws.send(JSON.stringify({ type: 'error', data: 'الجلسة غير موجودة' }));
+                    }
+                } else {
+                    ws.send(JSON.stringify({ type: 'error', data: 'رمز مؤقت غير صالح، أدخل رمز جلسة' }));
+                }
+                break;
+
             case 'verifyPhone':
                 const inputCode = data.phoneNumber.toUpperCase();
                 const result = await db.query('SELECT code, is_admin FROM subscribers WHERE code = $1', [inputCode]);
                 if (result.rows.length > 0) {
                     ws.sessionId = inputCode;
-                    const isAdmin = result.rows[0].is_admin;
-                    if (!sessions.has(ws.sessionId)) {
-                        sessions.set(ws.sessionId, {
+                    let session = sessions.get(ws.sessionId) || await loadSession(ws.sessionId);
+                    if (!session) {
+                        session = {
                             hexagons: {},
                             lettersOrder: ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'],
                             teams: { red: [], green: [] },
@@ -199,8 +362,11 @@ wss.on('connection', (ws) => {
                             colorSetIndex: 0,
                             isSwapped: false,
                             partyMode: false,
-                            questions: { general: await loadQuestions(null, true), session: await loadQuestions(ws.sessionId, false) }
-                        });
+                            questions: { general: await loadQuestions(null, true), session: await loadQuestions(ws.sessionId, false) },
+                            lastActivity: Date.now()
+                        };
+                        sessions.set(ws.sessionId, session);
+                        await saveSession(ws.sessionId, session);
                     }
                     ws.send(JSON.stringify({ type: 'codeVerified' }));
                 } else {
@@ -210,141 +376,119 @@ wss.on('connection', (ws) => {
 
             case 'join':
                 if (ws.sessionId) {
-                    const client = { ws, role: data.role, name: data.name, sessionId: ws.sessionId };
+                    const role = data.role;
+                    const name = data.name;
                     const session = sessions.get(ws.sessionId);
-                    const existingHost = clients.find(c => c.sessionId === ws.sessionId && c.role === 'host');
+                    const client = { ws, role, name, sessionId: ws.sessionId, clientId };
+                    const existingHost = Array.from(clients.values()).find(c => c.sessionId === ws.sessionId && c.role === 'host');
 
-                    if (data.role === 'host') {
+                    if (role === 'host') {
                         if (existingHost) {
                             ws.send(JSON.stringify({ type: 'joinError', data: 'يوجد مضيف بالفعل في هذه الجلسة!' }));
                             return;
                         }
-                        clients.push(client);
-                        ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: session.questions } }));
-                    } else if (data.role === 'contestant') {
-                        clients.push(client);
-                        // التعديل هنا: اختيار الفريق الذي يحتوي على عدد أقل من اللاعبين
+                        clients.set(clientId, client);
+                        const token = await generateToken(ws.sessionId, name, role);
+                        ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: session.questions, token } }));
+                    } else if (role === 'contestant') {
+                        clients.set(clientId, client);
                         const redCount = session.teams.red.length;
                         const greenCount = session.teams.green.length;
                         const team = redCount <= greenCount ? 'red' : 'green';
-                        if (!session.teams[team].includes(data.name)) {
-                            session.teams[team].push(data.name);
+                        if (!session.teams[team].includes(name)) {
+                            session.teams[team].push(name);
                         }
-                        ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {} } }));
-                        console.log('Broadcasting teams:', session.teams);
+                        const token = await generateToken(ws.sessionId, name, role);
+                        ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {}, token } }));
+                        await saveSession(ws.sessionId, session);
                         broadcast(ws.sessionId, { type: 'updateTeams', data: session.teams }, null);
                     }
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
                 } else {
                     ws.send(JSON.stringify({ type: 'error', data: 'يرجى التحقق من الرمز أولاً' }));
                 }
                 break;
 
             case 'updateHexagon':
-                if (ws.sessionId && clients.find(c => c.ws === ws && c.role === 'host')) {
+                if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                     const session = sessions.get(ws.sessionId);
                     session.hexagons[data.letter] = { color: data.color, clickCount: data.clickCount };
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
                     broadcast(ws.sessionId, { type: 'updateHexagon', data }, null);
                 }
                 break;
 
             case 'shuffle':
-                if (ws.sessionId && clients.find(c => c.ws === ws && c.role === 'host')) {
+                if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                     const session = sessions.get(ws.sessionId);
                     session.lettersOrder = data.lettersOrder;
                     session.hexagons = data.hexagons;
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
                     broadcast(ws.sessionId, { type: 'shuffle', data: { hexagons: session.hexagons, lettersOrder: session.lettersOrder } }, null);
                 }
                 break;
 
             case 'swapColors':
-                if (ws.sessionId && clients.find(c => c.ws === ws && c.role === 'host')) {
+                if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                     const session = sessions.get(ws.sessionId);
                     session.isSwapped = data.isSwapped;
-                    const updatedHexagons = {};
-                    for (const letter in session.hexagons) {
-                        const { color, clickCount } = session.hexagons[letter];
-                        let newColor = color;
-                        if (color === colorSets[session.colorSetIndex].red) {
-                            newColor = colorSets[session.colorSetIndex].green;
-                        } else if (color === colorSets[session.colorSetIndex].green) {
-                            newColor = colorSets[session.colorSetIndex].red;
-                        }
-                        updatedHexagons[letter] = { color: newColor, clickCount };
-                    }
-                    session.hexagons = updatedHexagons;
+                    session.hexagons = data.hexagons;
                     session.lettersOrder = data.lettersOrder;
-                    broadcast(ws.sessionId, {
-                        type: 'swapColors',
-                        data: {
-                            isSwapped: session.isSwapped,
-                            hexagons: session.hexagons,
-                            lettersOrder: session.lettersOrder
-                        }
-                    }, null);
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
+                    broadcast(ws.sessionId, { type: 'swapColors', data: { isSwapped: session.isSwapped, hexagons: session.hexagons, lettersOrder: session.lettersOrder } }, null);
                 }
                 break;
 
             case 'changeColors':
-                if (ws.sessionId && clients.find(c => c.ws === ws && c.role === 'host')) {
+                if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                     const session = sessions.get(ws.sessionId);
-                    const oldColorSetIndex = session.colorSetIndex;
                     session.colorSetIndex = data.colorSetIndex;
-                    const updatedHexagons = {};
-                    for (const letter in session.hexagons) {
-                        const { color, clickCount } = session.hexagons[letter];
-                        let newColor = color;
-                        for (let i = 0; i < colorSets.length; i++) {
-                            if (color === colorSets[i].red) {
-                                newColor = session.isSwapped ? colorSets[session.colorSetIndex].green : colorSets[session.colorSetIndex].red;
-                                break;
-                            } else if (color === colorSets[i].green) {
-                                newColor = session.isSwapped ? colorSets[session.colorSetIndex].red : colorSets[session.colorSetIndex].green;
-                                break;
-                            }
-                        }
-                        updatedHexagons[letter] = { color: newColor, clickCount };
-                    }
-                    session.hexagons = updatedHexagons;
+                    session.hexagons = data.hexagons;
                     session.lettersOrder = data.lettersOrder;
-                    broadcast(ws.sessionId, {
-                        type: 'changeColors',
-                        data: {
-                            colorSetIndex: session.colorSetIndex,
-                            hexagons: session.hexagons,
-                            lettersOrder: session.lettersOrder
-                        }
-                    }, null);
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
+                    broadcast(ws.sessionId, { type: 'changeColors', data: { colorSetIndex: session.colorSetIndex, hexagons: session.hexagons, lettersOrder: session.lettersOrder } }, null);
                 }
                 break;
 
             case 'party':
-                if (ws.sessionId && clients.find(c => c.ws === ws && c.role === 'host')) {
+                if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                     const session = sessions.get(ws.sessionId);
                     session.partyMode = data.active;
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
                     broadcast(ws.sessionId, { type: 'party', data: { active: data.active } }, null);
                 }
                 break;
 
             case 'buzzer':
-                if (ws.sessionId && !sessions.get(ws.sessionId).buzzer.active && !sessions.get(ws.sessionId).buzzerLock && clients.find(c => c.ws === ws && c.role === 'contestant')) {
+                if (ws.sessionId && !sessions.get(ws.sessionId).buzzer.active && !sessions.get(ws.sessionId).buzzerLock && clients.get(clientId)?.role === 'contestant') {
                     const session = sessions.get(ws.sessionId);
                     session.buzzer = { active: true, player: data.player };
                     session.buzzerLock = true;
-                    console.log(`Buzzer activated by ${data.player} in session ${ws.sessionId}`);
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
                     broadcast(ws.sessionId, { type: 'buzzer', data: session.buzzer }, null);
                     setTimeout(() => {
                         session.buzzer = { active: false, player: '' };
                         session.buzzerLock = false;
                         broadcast(ws.sessionId, { type: 'timeUp', data: {} }, null);
+                        saveSession(ws.sessionId, session);
                     }, 6000);
                 }
                 break;
 
             case 'resetBuzzer':
-                if (ws.sessionId && clients.find(c => c.ws === ws && c.role === 'host')) {
+                if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                     const session = sessions.get(ws.sessionId);
                     session.buzzer = { active: false, player: '' };
                     session.buzzerLock = false;
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
                     broadcast(ws.sessionId, { type: 'resetBuzzer', data: {} }, null);
                 }
                 break;
@@ -353,13 +497,14 @@ wss.on('connection', (ws) => {
                 if (ws.sessionId) {
                     const session = sessions.get(ws.sessionId);
                     session.teams = data.teams;
-                    console.log('Broadcasting teams from updateTeams:', session.teams);
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
                     broadcast(ws.sessionId, { type: 'updateTeams', data: session.teams }, null);
                 }
                 break;
 
             case 'addQuestion':
-                if (ws.sessionId && clients.find(c => c.ws === ws && c.role === 'host')) {
+                if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                     const session = sessions.get(ws.sessionId);
                     if (!session.questions.session[data.letter]) session.questions.session[data.letter] = [];
                     session.questions.session[data.letter].push([data.question, data.answer]);
@@ -367,6 +512,8 @@ wss.on('connection', (ws) => {
                         'INSERT INTO session_questions (session_code, letter, question, answer) VALUES ($1, $2, $3, $4)',
                         [ws.sessionId, data.letter, data.question, data.answer]
                     );
+                    session.lastActivity = Date.now();
+                    await saveSession(ws.sessionId, session);
                     broadcast(ws.sessionId, { type: 'updateQuestions', data: session.questions.session }, null);
                 }
                 break;
@@ -456,20 +603,22 @@ wss.on('connection', (ws) => {
                 if (adminCheckLatest.rows.length > 0) {
                     const count = parseInt(data.count);
                     if (count > 0) {
-                        const client = await db.connect();
                         try {
-                            await client.query('BEGIN');
-                            const deleted = await client.query(
-                                'DELETE FROM subscribers WHERE code NOT IN (SELECT code FROM subscribers WHERE is_admin = TRUE) ORDER BY created_at DESC LIMIT $1 RETURNING code',
+                            const availableCodes = await db.query(
+                                'SELECT COUNT(*) FROM subscribers WHERE is_admin = FALSE'
+                            );
+                            const availableCount = parseInt(availableCodes.rows[0].count);
+                            if (count > availableCount) {
+                                ws.send(JSON.stringify({ type: 'adminError', data: `عدد الرموز المطلوبة للحذف (${count}) أكبر من المتاح (${availableCount})` }));
+                                return;
+                            }
+                            const deleted = await db.query(
+                                'DELETE FROM subscribers WHERE ctid IN (SELECT ctid FROM subscribers WHERE is_admin = FALSE ORDER BY created_at DESC LIMIT $1) RETURNING code',
                                 [count]
                             );
-                            await client.query('COMMIT');
                             ws.send(JSON.stringify({ type: 'codesDeleted', data: deleted.rows.map(row => row.code) }));
                         } catch (err) {
-                            await client.query('ROLLBACK');
                             ws.send(JSON.stringify({ type: 'adminError', data: 'خطأ في حذف الرموز: ' + err.message }));
-                        } finally {
-                            client.release();
                         }
                     } else {
                         ws.send(JSON.stringify({ type: 'adminError', data: 'أدخل عدد صحيح أكبر من 0' }));
@@ -593,30 +742,94 @@ wss.on('connection', (ws) => {
                     }
                 }
                 break;
+
+            case 'backup':
+                const adminCheckBackup = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
+                if (adminCheckBackup.rows.length > 0) {
+                    try {
+                        const timestamp = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+                        const filename = `backup_${timestamp}.sql`;
+                        const backupDir = path.join(__dirname, 'backups');
+                        await fs.mkdir(backupDir, { recursive: true });
+                        const filepath = path.join(backupDir, filename);
+
+                        let sqlDump = '-- Backup generated on ' + new Date().toISOString() + '\n\n';
+
+                        const tables = ['subscribers', 'general_questions', 'session_questions'];
+                        for (const table of tables) {
+                            const result = await db.query(`SELECT column_name FROM information_schema.columns WHERE table_name = $1`, [table]);
+                            const columns = result.rows.map(row => row.column_name).join(', ');
+                            sqlDump += `TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE;\n`;
+
+                            const data = await db.query(`SELECT * FROM ${table}`);
+                            if (data.rows.length > 0) {
+                                sqlDump += `INSERT INTO ${table} (${columns}) VALUES\n`;
+                                data.rows.forEach((row, index) => {
+                                    const values = result.rows.map(col => {
+                                        const value = row[col.column_name];
+                                        if (value === null) return 'NULL';
+                                        if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
+                                        if (typeof value === 'number') return value;
+                                        return `'${value.toString().replace(/'/g, "''")}'`;
+                                    }).join(', ');
+                                    sqlDump += `(${values})${index < data.rows.length - 1 ? ',' : ';'}\n`;
+                                });
+                                sqlDump += '\n';
+                            }
+                        }
+
+                        await fs.writeFile(filepath, sqlDump);
+                        ws.send(JSON.stringify({ type: 'backupCreated', data: { filename } }));
+                        setTimeout(async () => {
+                            try {
+                                await fs.unlink(filepath);
+                            } catch (err) {
+                                console.error('Error deleting backup file:', err);
+                            }
+                        }, 10 * 60 * 1000); // حذف بعد 10 دقايق
+                    } catch (err) {
+                        ws.send(JSON.stringify({ type: 'adminError', data: 'خطأ في إنشاء النسخة الاحتياطية: ' + err.message }));
+                    }
+                }
+                break;
+
+            case 'restore':
+                const adminCheckRestore = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
+                if (adminCheckRestore.rows.length > 0) {
+                    try {
+                        const sqlContent = data.sqlContent;
+                        const client = await db.connect();
+                        try {
+                            await client.query('BEGIN');
+                            await client.query(sqlContent);
+                            await client.query('COMMIT');
+                            ws.send(JSON.stringify({ type: 'restoreSuccess', data: 'تم استعادة البيانات بنجاح' }));
+                        } catch (err) {
+                            await client.query('ROLLBACK');
+                            ws.send(JSON.stringify({ type: 'adminError', data: 'خطأ في استعادة البيانات: ' + err.message }));
+                        } finally {
+                            client.release();
+                        }
+                    } catch (err) {
+                        ws.send(JSON.stringify({ type: 'adminError', data: 'ملف غير صالح: ' + err.message }));
+                    }
+                }
+                break;
         }
     });
 
     ws.on('close', () => {
         console.log('WebSocket connection closed');
-        const index = clients.findIndex(client => client.ws === ws);
-        if (index !== -1) {
-            const client = clients[index];
-            if (client.role === 'contestant' && client.sessionId) {
-                const session = sessions.get(client.sessionId);
-                session.teams.red = session.teams.red.filter(name => name !== client.name);
-                session.teams.green = session.teams.green.filter(name => name !== client.name);
-                console.log('Broadcasting teams after disconnect:', session.teams);
-                broadcast(client.sessionId, { type: 'updateTeams', data: session.teams }, null);
-            }
-            clients.splice(index, 1);
-            console.log('عميل انقطع اتصاله');
+        const client = clients.get(clientId);
+        if (client) {
+            handleClientDisconnect(client);
         }
     });
 });
 
 server.listen(port, async () => {
     console.log(`Server running on port ${port}`);
-    console.log(`HTTP server: http://localhost:${port}`);
-    console.log(`WebSocket server: ws://localhost:${port}`);
     await initDatabase();
+    startPingPong();
+    cleanupSessions();
 });

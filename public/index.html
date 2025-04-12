@@ -5,364 +5,453 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة الحروف السداسية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-<style>
-    body { margin: 0; padding: 0; font-family: 'Tahoma', sans-serif; }
-    .container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background: #4b0082;
-        flex-direction: column;
-        padding: 1vw;
-        width: 100%;
-        box-sizing: border-box;
-        position: relative;
-        overflow: hidden;
-    }
-    .phone-screen, .welcome-screen, .host-screen, .contestant-screen {
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-    }
-    .phone-screen.active, .welcome-screen.active {
-        display: flex;
-        background: #4b0082;
-        color: #fff;
-        padding: 20px;
-        height: 100vh;
-        justify-content: center;
-    }
-    .host-screen.active, .contestant-screen.active { display: flex; }
-
-.hex-grid {
-    padding: 0;
-    background: #000000;
-    border-radius: 1vw;
-    box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.3);
-    width: calc(7 * (90vw / 7) + 6 * (90vw / 200)); /* العرض يتناسب مع 7 خلايا + 6 فجوات */
-    margin: 0 auto;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-}
-
-.row {
-    display: flex;
-    gap: calc(90vw / 100); /* فجوة أفقية مناسبة */
-    justify-content: center;
-}
-
-.row:not(:first-child) {
-    margin-top: calc(-90vw / 35); /* تداخل عمودي مع فجوة متساوية مع الأفقية */
-}
-
-.row:nth-child(even) {
-    margin-right: calc(0.5 * (90vw / 7) + (90vw / 200)); /* إزاحة الصفوف الزوجية إلى اليمين */
-}
-
-.row:nth-child(odd) {
-    margin-left: calc(0.5 * (90vw / 7) + (90vw / 200)); /* إزاحة الصفوف الفردية إلى اليسار */
-}
-
-.hexagon {
-    width: calc(90vw / 7); /* العرض ديناميكي حسب الشاشة */
-    height: calc(1.15 * (90vw / 7)); /* الارتفاع ديناميكي بنسبة العرض */
-    min-width: 40px; /* الحد الأدنى للعرض */
-    min-height: 46px; /* الحد الأدنى للارتفاع */
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: calc(90vw / 28); /* حجم الخط ديناميكي */
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    position: relative;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    background-color: #ffffe0;
-}
-    .hexagon.contestant-hex { cursor: default; }
-    .hexagon::before {
-        content: '';
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        background: inherit;
-        clip-path: inherit;
-        transform: scale(1.05);
-        z-index: -1;
-    }
-    .hexagon.fade { animation: fadeIn 0.5s ease-in-out; }
-    .hexagon.color-transition { transition: background-color 0.1s ease; }
-    @keyframes fadeIn {
-        0% { opacity: 0; transform: scale(0.9); }
-        100% { opacity: 1; transform: scale(1); }
-    }
-    .red-fixed { background-color: #ff4081; cursor: default; }
-    .green-fixed { background-color: #81c784; cursor: default; }
-    .outer-fixed-odd-right { clip-path: polygon(0% 25%, 50% 0%, 50% 100%, 0% 75%, 0% 25%); }
-    .outer-fixed-even-left { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 50% 0%); }
-    .outer-fixed-top { clip-path: polygon(0% 25%, 100% 25%, 100% 75%, 50% 100%, 0% 75%); }
-    .outer-fixed-bottom { clip-path: polygon(0% 25%, 50% 0%, 100% 25%, 100% 75%, 0% 75%); }
-    .outer-fixed-top-left { clip-path: polygon(50% 25%, 100% 25%, 100% 75%, 50% 100%, 50% 75%); }
-    .outer-fixed-bottom-left { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 75%, 50% 25%); }
-
-    .icon-container {
-        display: flex;
-        gap: 1vw;
-        margin: 1vw 0;
-        align-items: center;
-    }
-    .icon-btn {
-        width: 5vw;
-        height: 5vw;
-        min-width: 30px;
-        min-height: 30px;
-        max-width: 60px;
-        max-height: 60px;
-        border-radius: 50%;
-        background-color: #007bff;
-        color: #fff;
-        border: none;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 2vw;
-        cursor: pointer;
-        transition: transform 0.3s, background-color 0.3s;
-    }
-    .icon-btn:hover {
-        background-color: #0056b3;
-        transform: scale(1.1);
-    }
-    .party-btn { font-size: 2.5vw; }
-    input, select {
-        padding: 8px;
-        font-size: 16px;
-        margin: 5px;
-        border-radius: 5px;
-    }
-    button { padding: 8px 16px; margin: 5px; border-radius: 5px; cursor: pointer; }
-    .party-text {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 12vw;
-        font-weight: bold;
-        color: #ffd700;
-        text-shadow: 2px 2px 5px #ff4500;
-        display: none;
-        z-index: 10;
-        animation: pulse 0.8s infinite alternate;
-        -webkit-text-stroke: 2px #000000;
-    }
-    @keyframes pulse {
-        0% { transform: translate(-50%, -50%) scale(1); }
-        100% { transform: translate(-50%, -50%) scale(1.2); }
-    }
-    .flash {
-        position: absolute;
-        width: 20px;
-        height: 20px;
-        background-color: rgba(255, 215, 0, 0.8);
-        border-radius: 50%;
-        z-index: 5;
-        animation: flashAnimation 1s ease-out infinite;
-    }
-    @keyframes flashAnimation {
-        0% { opacity: 1; transform: scale(0); }
-        50% { opacity: 0.8; }
-        100% { opacity: 0; transform: scale(2); }
-    }
-    .buzzer-btn {
-        margin-top: 20px;
-        padding: 15px 30px;
-        background-color: #e6b800;
-        color: #fff;
-        border: none;
-        border-radius: 50%;
-        font-size: 40px;
-        cursor: pointer;
-        width: 200px;
-        height: 200px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    .buzzer-btn:disabled { background-color: #ccc; cursor: not-allowed; }
-    .question-section {
-        margin: 10px 0;
-        padding: 10px;
-        background: #fff;
-        border-radius: 5px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        width: 80%;
-        text-align: center;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        justify-content: center;
-    }
-    .question-section input, .question-section select, .question-section button {
-        flex: 1;
-        min-width: 120px;
-    }
-    .buzzer-info {
-        color: #fff;
-        font-size: 18px;
-        margin: 10px 0;
-    }
-    .players-container {
-        display: flex;
-        justify-content: space-between;
-        width: 80%;
-        margin: 10px 0;
-    }
-    .team-list {
-        width: 45%;
-        padding: 10px;
-        background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        min-height: 100px;
-    }
-    .team-list h3 { text-align: center; margin: 0 0 10px 0; }
-    .player-bubble {
-        display: inline-block;
-        padding: 8px 15px;
-        margin: 5px;
-        background: #e0e0e0;
-        border-radius: 20px;
-        font-size: 16px;
-        cursor: move;
-    }
-    .player-bubble.red { background: #ff4081; color: #fff; }
-    .player-bubble.green { background: #81c784; color: #fff; }
-    .error-message {
-        color: red;
-        font-size: 16px;
-        margin: 10px 0;
-    }
-    .toggle-switch {
-        position: relative;
-        display: inline-block;
-        width: 40px;
-        height: 20px;
-        margin: 0 10px;
-    }
-    .toggle-switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-    .slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: .4s;
-        border-radius: 20px;
-    }
-    .slider:before {
-        position: absolute;
-        content: "";
-        height: 16px;
-        width: 16px;
-        left: 2px;
-        bottom: 2px;
-        background-color: white;
-        transition: .4s;
-        border-radius: 50%;
-    }
-    input:checked + .slider {
-        background-color: #2196F3;
-    }
-    input:checked + .slider:before {
-        transform: translateX(20px);
-    }
-    .toggle-label {
-        color: #fff;
-        font-size: 14px;
-        margin-left: 5px;
-    }
-    .questions-container {
-        max-height: 200px;
-        width: 70%;
-        overflow-y: auto;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        padding: 10px;
-        background: #fff;
-        margin-top: 10px;
-        color: #000;
-    }
-    .question-item {
-        display: flex;
-        align-items: center;
-        padding: 5px 0;
-        white-space: nowrap;
-    }
-    .question-item input[type="checkbox"] {
-        margin-right: 10px;
-    }
-    #adminPanel {
-        max-height: 80vh;
-        overflow-y: auto;
-        width: 90%;
-        background: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 10px;
-    }
-    .stats {
-        color: #fff;
-        font-size: 16px;
-        margin: 10px 0;
-    }
-@media (max-width: 600px) {
-    .hex-grid {
-        width: calc(7 * (95vw / 7) + 6 * (95vw / 200)); /* العرض ديناميكي للشاشات الصغيرة */
-    }
-    .hexagon {
-        width: calc(95vw / 7); /* العرض ديناميكي */
-        height: calc(1.15 * (95vw / 7)); /* الارتفاع ديناميكي */
-        min-width: 30px; /* الحد الأدنى للشاشات الصغيرة */
-        min-height: 34.5px; /* الحد الأدنى للارتفاع */
-        font-size: calc(95vw / 28); /* حجم الخط ديناميكي */
-    }
-    .row:not(:first-child) {
-        margin-top: calc(-95vw / 35); /* تداخل عمودي مع فجوة متساوية */
-    }
-    .row:nth-child(even) {
-        margin-right: calc(0.5 * (95vw / 7) + (95vw / 200));
-    }
-    .row:nth-child(odd) {
-        margin-left: calc(0.5 * (95vw / 7) + (95vw / 200));
-    }
-    .row {
-        gap: calc(95vw / 100); /* فجوة أفقية متساوية مع العمودية */
-    }
-    .icon-btn { width: 8vw; height: 8vw; font-size: 3vw; }
-    .party-btn { font-size: 3.5vw; }
-    .party-text { font-size: 18vw; -webkit-text-stroke: 1.5px #000000; }
-    .buzzer-btn { width: 160px; height: 160px; font-size: 18px; }
-    .players-container { flex-direction: column; width: 90%; align-items: center;}
-    .team-list { width: 100%; margin-bottom: 10px; }
-    .question-section { width: 90%; flex-direction: column; }
-    .questions-container { width: 90%; max-height: 150px; }
-    .toggle-switch { width: 30px; height: 15px; }
-    .slider:before { height: 11px; width: 11px; }
-    input:checked + .slider:before { transform: translateX(15px); }
-    .toggle-label { font-size: 12px; }
-}
-</style>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Tahoma', sans-serif;
+        }
+        /* منع تظليل النص لشاشة المضيف والمتسابق فقط */
+        .host-screen, .contestant-screen {
+            user-select: none;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #4b0082;
+            flex-direction: column;
+            padding: 1vw;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+        .phone-screen, .welcome-screen, .host-screen, .contestant-screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .phone-screen.active, .welcome-screen.active {
+            display: flex;
+            background: #4b0082;
+            color: #fff;
+            padding: 20px;
+            height: 100vh;
+            justify-content: center;
+        }
+        .host-screen.active, .contestant-screen.active {
+            display: flex;
+        }
+        .hex-grid {
+            padding: 0;
+            background: #000000;
+            border-radius: 1vw;
+            box-shadow: 0 0.4vw 0.8vw rgba(0, 0, 0, 0.3);
+            width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+            margin: 0 auto;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        .row {
+            display: flex;
+            gap: calc(90vw / 100);
+            justify-content: center;
+        }
+        .row:not(:first-child) {
+            margin-top: calc(-90vw / 35);
+        }
+        .row:nth-child(even) {
+            margin-right: calc(0.5 * (90vw / 7) + (90vw / 200));
+        }
+        .row:nth-child(odd) {
+            margin-left: calc(0.5 * (90vw / 7) + (90vw / 200));
+        }
+        .hexagon {
+            width: calc(90vw / 7);
+            height: calc(1.15 * (90vw / 7));
+            min-width: 40px;
+            min-height: 46px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: calc(90vw / 28);
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            background-color: #ffffe0;
+        }
+        .hexagon.contestant-hex {
+            cursor: default;
+        }
+        .hexagon::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: inherit;
+            clip-path: inherit;
+            transform: scale(1.05);
+            z-index: -1;
+        }
+        .hexagon.fade {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .hexagon.color-transition {
+            transition: background-color 0.1s ease;
+        }
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .red-fixed {
+            background-color: #ff4081;
+            cursor: default;
+        }
+        .green-fixed {
+            background-color: #81c784;
+            cursor: default;
+        }
+        .outer-fixed-odd-right {
+            clip-path: polygon(0% 25%, 50% 0%, 50% 100%, 0% 75%, 0% 25%);
+        }
+        .outer-fixed-even-left {
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 50% 0%);
+        }
+        .outer-fixed-top {
+            clip-path: polygon(0% 25%, 100% 25%, 100% 75%, 50% 100%, 0% 75%);
+        }
+        .outer-fixed-bottom {
+            clip-path: polygon(0% 25%, 50% 0%, 100% 25%, 100% 75%, 0% 75%);
+        }
+        .outer-fixed-top-left {
+            clip-path: polygon(50% 25%, 100% 25%, 100% 75%, 50% 100%, 50% 75%);
+        }
+        .outer-fixed-bottom-left {
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 75%, 50% 25%);
+        }
+        .icon-container {
+            display: flex;
+            gap: 1vw;
+            margin: 1vw 0;
+            align-items: center;
+        }
+        .icon-btn {
+            width: 5vw;
+            height: 5vw;
+            min-width: 30px;
+            min-height: 30px;
+            max-width: 60px;
+            max-height: 60px;
+            border-radius: 50%;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2vw;
+            cursor: pointer;
+            transition: transform 0.3s, background-color 0.3s;
+        }
+        .icon-btn:hover {
+            background-color: #0056b3;
+            transform: scale(1.1);
+        }
+        .party-btn {
+            font-size: 2.5vw;
+        }
+        input, select {
+            padding: 8px;
+            font-size: 16px;
+            margin: 5px;
+            border-radius: 5px;
+        }
+        button {
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .party-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12vw;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 5px #ff4500;
+            display: none;
+            z-index: 10;
+            animation: pulse 0.8s infinite alternate;
+            -webkit-text-stroke: 2px #000000;
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            100% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+        .flash {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(255, 215, 0, 0.8);
+            border-radius: 50%;
+            z-index: 5;
+            animation: flashAnimation 1s ease-out infinite;
+        }
+        @keyframes flashAnimation {
+            0% { opacity: 1; transform: scale(0); }
+            50% { opacity: 0.8; }
+            100% { opacity: 0; transform: scale(2); }
+        }
+        .buzzer-btn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            background-color: #e6b800;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            font-size: 40px;
+            cursor: pointer;
+            width: 200px;
+            height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .buzzer-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .question-section {
+            margin: 10px 0;
+            padding: 10px;
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            text-align: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .question-section input, .question-section select, .question-section button {
+            flex: 1;
+            min-width: 120px;
+        }
+        .buzzer-info {
+            color: #fff;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        .players-container {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            margin: 10px 0;
+        }
+        .team-list {
+            width: 45%;
+            padding: 10px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-height: 100px;
+        }
+        .team-list h3 {
+            text-align: center;
+            margin: 0 0 10px 0;
+        }
+        .player-bubble {
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 5px;
+            background: #e0e0e0;
+            border-radius: 20px;
+            font-size: 16px;
+            cursor: move;
+        }
+        .player-bubble.red {
+            background: #ff4081;
+            color: #fff;
+        }
+        .player-bubble.green {
+            background: #81c784;
+            color: #fff;
+        }
+        .error-message {
+            color: red;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            margin: 0 10px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        .toggle-label {
+            color: #fff;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+        .questions-container {
+            max-height: 200px;
+            width: 70%;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            background: #fff;
+            margin-top: 10px;
+            color: #000;
+        }
+        .question-item {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            white-space: nowrap;
+        }
+        .question-item input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        #adminPanel {
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 90%;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .stats {
+            color: #fff;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .backup-btn {
+            background-color: #FFC107; /* لون أصفر لزرّي النسخ والاستعادة */
+            color: #000;
+        }
+        .backup-btn:hover {
+            background-color: #FFA000; /* لون أغمق عند الهوفر */
+        }
+        @media (max-width: 600px) {
+            .hex-grid {
+                width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
+            }
+            .hexagon {
+                width: calc(95vw / 7);
+                height: calc(1.15 * (95vw / 7));
+                min-width: 30px;
+                min-height: 34.5px;
+                font-size: calc(95vw / 28);
+            }
+            .row:not(:first-child) {
+                margin-top: calc(-95vw / 35);
+            }
+            .row:nth-child(even) {
+                margin-right: calc(0.5 * (95vw / 7) + (95vw / 200));
+            }
+            .row:nth-child(odd) {
+                margin-left: calc(0.5 * (95vw / 7) + (95vw / 200));
+            }
+            .row {
+                gap: calc(95vw / 100);
+            }
+            .icon-btn {
+                width: 8vw;
+                height: 8vw;
+                font-size: 3vw;
+            }
+            .party-btn {
+                font-size: 3.5vw;
+            }
+            .party-text {
+                font-size: 18vw;
+                -webkit-text-stroke: 1.5px #000000;
+            }
+            .buzzer-btn {
+                width: 160px;
+                height: 160px;
+                font-size: 18px;
+            }
+            .players-container {
+                flex-direction: column;
+                width: 90%;
+                align-items: center;
+            }
+            .team-list {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            .question-section {
+                width: 90%;
+                flex-direction: column;
+            }
+            .questions-container {
+                width: 90%;
+                max-height: 150px;
+            }
+            .toggle-switch {
+                width: 30px;
+                height: 15px;
+            }
+            .slider:before {
+                height: 11px;
+                width: 11px;
+            }
+            input:checked + .slider:before {
+                transform: translateX(15px);
+            }
+            .toggle-label {
+                font-size: 12px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -383,6 +472,7 @@
             <p id="welcomeError" class="error-message"></p>
             <div id="adminPanel" style="display: none; margin-top: 20px;">
                 <h3>إدارة الرموز</h3>
+                <p id="codesCount" class="stats">إجمالي عدد الرموز: 0</p>
                 <input type="number" id="codeCount" placeholder="عدد الرموز المطلوبة" min="1" max="5000">
                 <button id="generateCodesButton">توليد الرموز</button>
                 <button id="copyCodesButton" style="display: none;">نسخ الرموز</button>
@@ -398,9 +488,12 @@
                 <br>
                 <input type="number" id="deleteLatestCount" placeholder="عدد الرموز الأحدث للحذف">
                 <button id="deleteLatestCodesButton">حذف الأحدث</button>
+                <br>
+                <button id="backupButton" class="backup-btn">نسخ احتياطي</button>
+                <input type="file" id="restoreFile" accept=".sql" style="display: none;">
+                <button id="restoreButton" class="backup-btn">استعادة</button>
                 <p id="adminStatus" style="color: #fff;"></p>
                 <p id="adminError" class="error-message"></p>
-                <p id="codesCount" class="stats"></p>
                 <p id="questionsCount" class="stats"></p>
                 <div id="generatedCodes" style="margin-top: 10px;"></div>
                 <h3>إدارة الأسئلة العامة</h3>
@@ -499,6 +592,7 @@
 
     <audio id="buzzerSound" src="/school-bell.mp3" preload="auto"></audio>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
         const letters = ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'];
         const colorSets = [
@@ -513,11 +607,11 @@
 
         function getColorCycle() {
             return [
-                '#ffffe0',  // 0: أصفر فاتح (السؤال مختفي)
-                '#ffa500',  // 1: برتقالي (السؤال يظهر)
-                colorSets[currentColorSetIndex].red,  // 2: أحمر
-                colorSets[currentColorSetIndex].green,  // 3: أخضر
-                '#ffffe0'   // 4: أصفر فاتح (السؤال يختفي)
+                '#ffffe0',
+                '#ffa500',
+                colorSets[currentColorSetIndex].red,
+                colorSets[currentColorSetIndex].green,
+                '#ffffe0'
             ];
         }
 
@@ -529,12 +623,221 @@
         let phoneNumber = null;
         let isAdmin = false;
         let playerName = '';
+        let token = localStorage.getItem('sessionToken') || null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        const reconnectInterval = 3000;
 
-        try {
-            ws = new WebSocket(window.location.protocol === 'https:' ? 'wss://' + window.location.host : 'ws://' + window.location.host);
-        } catch (error) {
-            console.error('Failed to initialize WebSocket:', error);
-            document.getElementById('phoneError').textContent = 'فشل الاتصال بالخادم.';
+        function connectWebSocket() {
+            try {
+                ws = new WebSocket(window.location.protocol === 'https:' ? 'wss://' + window.location.host : 'ws://' + window.location.host);
+                ws.onopen = () => {
+                    console.log('Connected to WebSocket');
+                    reconnectAttempts = 0;
+                    document.getElementById('phoneError').textContent = '';
+                    hideConnectionLost();
+                    if (token) {
+                        ws.send(JSON.stringify({ type: 'reconnect', data: { token } }));
+                    } else if (phoneNumber && playerName) {
+                        ws.send(JSON.stringify({ type: 'join', data: { role: isHost ? 'host' : 'contestant', name: playerName, phoneNumber } }));
+                    }
+                };
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    document.getElementById('phoneError').textContent = 'فشل الاتصال، جاري المحاولة...';
+                    showConnectionLost();
+                };
+                ws.onclose = () => {
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        setTimeout(() => {
+                            reconnectAttempts++;
+                            console.log(`Reconnection attempt ${reconnectAttempts}`);
+                            connectWebSocket();
+                        }, reconnectInterval);
+                    } else {
+                        document.getElementById('phoneError').textContent = 'تعذر الاتصال، حاول مرة أخرى لاحقًا.';
+                        showConnectionLost();
+                        resetToPhoneScreen();
+                    }
+                };
+                ws.onmessage = handleMessages;
+                ws.onpong = () => {
+                    // تلقي Pong من الخادم
+                };
+            } catch (error) {
+                console.error('Failed to initialize WebSocket:', error);
+                document.getElementById('phoneError').textContent = 'فشل الاتصال بالخادم.';
+            }
+        }
+
+        function showConnectionLost() {
+            let connectionLostDiv = document.getElementById('connectionLost');
+            if (!connectionLostDiv) {
+                connectionLostDiv = document.createElement('div');
+                connectionLostDiv.id = 'connectionLost';
+                connectionLostDiv.style.cssText = 'display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); color: white; display: flex; justify-content: center; align-items: center; flex-direction: column;';
+                connectionLostDiv.innerHTML = `
+                    <p>تم فقدان الاتصال بالخادم</p>
+                    <button onclick="reconnectManually()">إعادة المحاولة</button>
+                `;
+                document.body.appendChild(connectionLostDiv);
+            }
+            connectionLostDiv.style.display = 'flex';
+        }
+
+        function hideConnectionLost() {
+            const connectionLostDiv = document.getElementById('connectionLost');
+            if (connectionLostDiv) {
+                connectionLostDiv.style.display = 'none';
+            }
+        }
+
+        function reconnectManually() {
+            reconnectAttempts = 0;
+            connectWebSocket();
+        }
+
+        function resetToPhoneScreen() {
+            document.getElementById('hostScreen').classList.remove('active');
+            document.getElementById('contestantScreen').classList.remove('active');
+            document.getElementById('welcomeScreen').classList.remove('active');
+            document.getElementById('phoneScreen').classList.add('active');
+            localStorage.removeItem('sessionToken');
+            token = null;
+            phoneNumber = null;
+            playerName = '';
+            isHost = false;
+            isAdmin = false;
+        }
+
+        function handleMessages(event) {
+            const { type, data } = JSON.parse(event.data);
+            if (type === 'codeVerified') {
+                phoneNumber = document.getElementById('phoneNumber').value.trim().toUpperCase();
+                isAdmin = (phoneNumber === 'IMWRA143');
+                document.getElementById('phoneScreen').classList.remove('active');
+                document.getElementById('welcomeScreen').classList.add('active');
+                if (isAdmin) {
+                    document.getElementById('adminPanel').style.display = 'block';
+                    fetchGeneralQuestions();
+                    fetchSessionQuestions();
+                    updateCodesCount();
+                }
+            } else if (type === 'codeError') {
+                document.getElementById('phoneError').textContent = data;
+            } else if (type === 'init') {
+                token = data.token || token;
+                if (token) {
+                    localStorage.setItem('sessionToken', token);
+                }
+                defaultQuestions = data.questions || {};
+                currentColorSetIndex = data.colorSetIndex;
+                isSwapped = data.isSwapped;
+                updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+                updateTeams(data.teams);
+                updateBuzzer(data.buzzer);
+            } else if (type === 'codesGenerated') {
+                const generatedCodesDiv = document.getElementById('generatedCodes');
+                generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
+                document.getElementById('adminStatus').textContent = 'تم توليد الرموز بنجاح';
+                document.getElementById('copyCodesButton').style.display = 'inline';
+                updateCodesCount();
+            } else if (type === 'manualCodeAdded') {
+                document.getElementById('generatedCodes').innerHTML = `تم إضافة الرمز: ${data}`;
+                document.getElementById('adminStatus').textContent = 'تمت الإضافة بنجاح';
+                document.getElementById('copyCodesButton').style.display = 'none';
+                updateCodesCount();
+            } else if (type === 'codeDeleted') {
+                document.getElementById('generatedCodes').innerHTML = `تم حذف الرمز: ${data}`;
+                document.getElementById('adminStatus').textContent = 'تم الحذف بنجاح';
+                document.getElementById('copyCodesButton').style.display = 'none';
+                updateCodesCount();
+            } else if (type === 'codesDeleted') {
+                document.getElementById('adminStatus').textContent = `تم حذف ${data.length} رمز`;
+                document.getElementById('generatedCodes').innerHTML = '';
+                updateCodesCount();
+            } else if (type === 'adminError') {
+                document.getElementById('adminError').textContent = data;
+                document.getElementById('adminStatus').textContent = '';
+            } else if (type === 'generalQuestions') {
+                displayGeneralQuestions(data);
+                document.getElementById('questionsCount').textContent = `عدد الأسئلة العامة: ${data.length}`;
+            } else if (type === 'sessionQuestions') {
+                displaySessionQuestions(data);
+            } else if (type === 'generalQuestionAdded' || type === 'generalQuestionsAdded') {
+                document.getElementById('adminStatus').textContent = data;
+                fetchGeneralQuestions();
+            } else if (type === 'generalQuestionsDeleted') {
+                document.getElementById('adminStatus').textContent = 'تم حذف الأسئلة المحددة';
+                fetchGeneralQuestions();
+            } else if (type === 'addedToGeneral') {
+                document.getElementById('adminStatus').textContent = 'تم إضافة الأسئلة المحددة إلى العام';
+                fetchGeneralQuestions();
+                fetchSessionQuestions();
+            } else if (type === 'codesCount') {
+                document.getElementById('codesCount').textContent = `إجمالي عدد الرموز: ${data}`;
+            } else if (type === 'backupCreated') {
+                const link = document.createElement('a');
+                link.href = `/backups/${data.filename}`;
+                link.download = data.filename;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                document.getElementById('adminStatus').textContent = 'تم إنشاء النسخة الاحتياطية، الملف محفوظ';
+            } else if (type === 'restoreSuccess') {
+                document.getElementById('adminStatus').textContent = data;
+                document.getElementById('restoreFile').value = '';
+            } else if (type === 'updateHexagon') {
+                const hex = document.querySelector(`#${isHost ? 'hexGridHost' : 'hexGridContestant'} .changeable[data-letter="${data.letter}"]`);
+                if (hex) {
+                    hex.style.backgroundColor = data.color;
+                    hex.dataset.clickCount = data.clickCount;
+                    if (data.clickCount === '1') {
+                        currentQuestionLetter = data.letter;
+                        showQuestionAndAnswer(data.letter);
+                    } else if (data.clickCount === '0') {
+                        document.getElementById('currentQuestion').textContent = '';
+                    }
+                }
+            } else if (type === 'shuffle') {
+                updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+                stopPartyMode();
+            } else if (type === 'swapColors') {
+                isSwapped = data.isSwapped;
+                updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+            } else if (type === 'changeColors') {
+                currentColorSetIndex = data.colorSetIndex;
+                updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+                stopPartyMode();
+            } else if (type === 'party') {
+                if (data.active) startPartyMode(); else stopPartyMode();
+            } else if (type === 'buzzer') {
+                updateBuzzer(data);
+                if (data.active && isHost) {
+                    const audio = document.getElementById('buzzerSound');
+                    audio.play().catch(err => console.error('Error playing buzzer sound:', err));
+                }
+            } else if (type === 'timeUp') {
+                updateBuzzer({ active: false, player: '', message: 'انتهى الوقت' });
+                setTimeout(() => {
+                    updateBuzzer({ active: false, player: '' });
+                }, 3000);
+            } else if (type === 'resetBuzzer') {
+                updateBuzzer({ active: false, player: '' });
+            } else if (type === 'updateTeams') {
+                updateTeams(data);
+            } else if (type === 'updateQuestions') {
+                defaultQuestions = data;
+            } else if (type === 'joinError') {
+                document.getElementById('welcomeScreen').classList.add('active');
+                document.getElementById('hostScreen').classList.remove('active');
+                document.getElementById('contestantScreen').classList.remove('active');
+            } else if (type === 'error') {
+                if (data.includes('رمز مؤقت غير صالح') || data.includes('الجلسة غير موجودة')) {
+                    resetToPhoneScreen();
+                }
+            }
         }
 
         window.onload = () => {
@@ -543,134 +846,14 @@
             updateCodesCount();
             const audio = document.getElementById('buzzerSound');
             audio.load();
+            connectWebSocket();
         };
-
-        if (ws) {
-            ws.onopen = () => {
-                console.log('Connected to WebSocket');
-                document.getElementById('phoneError').textContent = '';
-            };
-
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                document.getElementById('phoneError').textContent = 'فشل الاتصال بالخادم.';
-            };
-
-            ws.onmessage = (event) => {
-                const { type, data } = JSON.parse(event.data);
-                if (type === 'codeVerified') {
-                    phoneNumber = document.getElementById('phoneNumber').value.trim();
-                    isAdmin = (phoneNumber.toUpperCase() === 'IMWRA143');
-                    document.getElementById('phoneScreen').classList.remove('active');
-                    document.getElementById('welcomeScreen').classList.add('active');
-                    if (isAdmin) {
-                        document.getElementById('adminPanel').style.display = 'block';
-                        fetchGeneralQuestions();
-                        fetchSessionQuestions();
-                    }
-                } else if (type === 'codeError') {
-                    document.getElementById('phoneError').textContent = data;
-                } else if (type === 'codesGenerated') {
-                    const generatedCodesDiv = document.getElementById('generatedCodes');
-                    generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
-                    document.getElementById('adminStatus').textContent = 'انتهى التوليد';
-                    document.getElementById('copyCodesButton').style.display = 'inline';
-                    updateCodesCount();
-                } else if (type === 'manualCodeAdded') {
-                    document.getElementById('generatedCodes').innerHTML = `تم إضافة الرمز: ${data}`;
-                    document.getElementById('adminStatus').textContent = '';
-                    document.getElementById('copyCodesButton').style.display = 'none';
-                    updateCodesCount();
-                } else if (type === 'codeDeleted') {
-                    document.getElementById('generatedCodes').innerHTML = `تم حذف الرمز: ${data}`;
-                    document.getElementById('adminStatus').textContent = '';
-                    document.getElementById('copyCodesButton').style.display = 'none';
-                    updateCodesCount();
-                } else if (type === 'codesDeleted') {
-                    document.getElementById('adminStatus').textContent = `تم حذف ${data.length} رمز`;
-                    document.getElementById('generatedCodes').innerHTML = '';
-                    updateCodesCount();
-                } else if (type === 'adminError') {
-                    document.getElementById('adminError').textContent = data;
-                    document.getElementById('adminStatus').textContent = '';
-                } else if (type === 'generalQuestions') {
-                    displayGeneralQuestions(data);
-                    document.getElementById('questionsCount').textContent = `عدد الأسئلة العامة: ${data.length}`;
-                } else if (type === 'sessionQuestions') {
-                    displaySessionQuestions(data);
-                } else if (type === 'generalQuestionAdded' || type === 'generalQuestionsAdded') {
-                    document.getElementById('adminStatus').textContent = data;
-                    fetchGeneralQuestions();
-                } else if (type === 'generalQuestionsDeleted') {
-                    document.getElementById('adminStatus').textContent = 'تم حذف الأسئلة المحددة';
-                    fetchGeneralQuestions();
-                } else if (type === 'addedToGeneral') {
-                    document.getElementById('adminStatus').textContent = 'تم إضافة الأسئلة المحددة إلى العام';
-                    fetchGeneralQuestions();
-                    fetchSessionQuestions();
-                } else if (type === 'codesCount') {
-                    document.getElementById('codesCount').textContent = `إجمالي عدد الرموز: ${data}`;
-                } else if (type === 'init') {
-                    defaultQuestions = data.questions || {};
-                    currentColorSetIndex = data.colorSetIndex;
-                    isSwapped = data.isSwapped;
-                    updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
-                    updateTeams(data.teams);
-                    updateBuzzer(data.buzzer);
-                } else if (type === 'updateHexagon') {
-                    const hex = document.querySelector(`#${isHost ? 'hexGridHost' : 'hexGridContestant'} .changeable[data-letter="${data.letter}"]`);
-                    if (hex) {
-                        hex.style.backgroundColor = data.color;
-                        hex.dataset.clickCount = data.clickCount;
-                        if (data.clickCount === '1') {
-                            currentQuestionLetter = data.letter;
-                            showQuestionAndAnswer(data.letter);
-                        } else if (data.clickCount === '0') {
-                            document.getElementById('currentQuestion').textContent = '';
-                        }
-                    }
-                } else if (type === 'shuffle') {
-                    updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
-                    stopPartyMode();
-                } else if (type === 'swapColors') {
-                    isSwapped = data.isSwapped;
-                    updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
-                } else if (type === 'changeColors') {
-                    currentColorSetIndex = data.colorSetIndex;
-                    updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
-                    stopPartyMode();
-                } else if (type === 'party') {
-                    if (data.active) startPartyMode(); else stopPartyMode();
-                } else if (type === 'buzzer') {
-                    updateBuzzer(data);
-                    if (data.active && isHost) {
-                        const audio = document.getElementById('buzzerSound');
-                        audio.play().catch(err => console.error('Error playing buzzer sound:', err));
-                    }
-                } else if (type === 'timeUp') {
-                    updateBuzzer({ active: false, player: '', message: 'انتهى الوقت' });
-                    setTimeout(() => {
-                        updateBuzzer({ active: false, player: '' });
-                    }, 3000); // إخفاء الرسالة بعد 3 ثواني
-                } else if (type === 'resetBuzzer') {
-                    updateBuzzer({ active: false, player: '' });
-                } else if (type === 'updateTeams') {
-                    updateTeams(data);
-                } else if (type === 'updateQuestions') {
-                    defaultQuestions = data;
-                } else if (type === 'joinError') {
-                    alert(data);
-                    document.getElementById('welcomeScreen').classList.add('active');
-                    document.getElementById('hostScreen').classList.remove('active');
-                    document.getElementById('contestantScreen').classList.remove('active');
-                }
-            };
-        }
 
         document.getElementById('submitPhoneButton').addEventListener('click', () => {
             const input = document.getElementById('phoneNumber').value.trim();
             if (input) {
                 if (ws && ws.readyState === WebSocket.OPEN) {
+                    phoneNumber = input.toUpperCase();
                     ws.send(JSON.stringify({ type: 'verifyPhone', data: { phoneNumber: input } }));
                 } else {
                     document.getElementById('phoneError').textContent = 'فشل الاتصال بالخادم';
@@ -691,7 +874,7 @@
                     ws.send(JSON.stringify({ type: 'join', data: { role: 'host', name, phoneNumber } }));
                 }
             } else {
-                alert('الرجاء إدخال اسمك!');
+                document.getElementById('welcomeError').textContent = 'الرجاء إدخال اسمك!';
             }
         });
 
@@ -702,12 +885,11 @@
                 isHost = false;
                 document.getElementById('welcomeScreen').classList.remove('active');
                 document.getElementById('contestantScreen').classList.add('active');
-                assignRandomTeam(name); // يعرض فقط معلومات مؤقتة
                 if (ws && ws.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({ type: 'join', data: { role: 'contestant', name, phoneNumber } }));
                 }
             } else {
-                alert('الرجاء إدخال اسمك!');
+                document.getElementById('welcomeError').textContent = 'الرجاء إدخال اسمك!';
             }
         });
 
@@ -797,7 +979,7 @@
                     const workbook = XLSX.read(data, { type: 'array' });
                     const sheet = workbook.Sheets[workbook.SheetNames[0]];
                     const json = XLSX.utils.sheet_to_json(sheet, { header: ['letter', 'question', 'answer'] });
-                    json.shift(); // Remove header row
+                    json.shift();
                     ws.send(JSON.stringify({ type: 'addGeneralQuestions', data: { fileContent: JSON.stringify(json), phoneNumber } }));
                 };
                 reader.readAsArrayBuffer(file);
@@ -833,6 +1015,37 @@
 
         document.getElementById('sessionLetterFilter').addEventListener('change', () => {
             fetchSessionQuestions();
+        });
+
+        document.getElementById('backupButton').addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                document.getElementById('adminStatus').textContent = 'جاري إنشاء النسخة الاحتياطية...';
+                ws.send(JSON.stringify({ type: 'backup', data: { phoneNumber } }));
+            } else {
+                document.getElementById('adminError').textContent = 'فشل الاتصال بالخادم!';
+            }
+        });
+
+        document.getElementById('restoreButton').addEventListener('click', () => {
+            document.getElementById('restoreFile').click();
+        });
+
+        document.getElementById('restoreFile').addEventListener('change', () => {
+            const fileInput = document.getElementById('restoreFile');
+            const file = fileInput.files[0];
+            if (file && ws && ws.readyState === WebSocket.OPEN) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const sqlContent = e.target.result;
+                    if (confirm('هل أنت متأكد؟ هذا سيحذف البيانات الحالية وقد يؤثر على الجلسات النشطة.')) {
+                        document.getElementById('adminStatus').textContent = 'جاري استعادة البيانات...';
+                        ws.send(JSON.stringify({ type: 'restore', data: { sqlContent, phoneNumber } }));
+                    }
+                };
+                reader.readAsText(file);
+            } else {
+                document.getElementById('adminError').textContent = 'يرجى اختيار ملف SQL صالح!';
+            }
         });
 
         function createHexGrid(gridId, clickable) {
@@ -933,7 +1146,7 @@
             if (!questions || !questions[letter]) {
                 document.getElementById('currentQuestion').textContent = toggle ? 
                     'لا توجد أسئلة عامة لهذا الحرف' : 
-                    'انت لم تضيف سؤال لهذا الحرف، جرب تفعيل الأسئلة العامة';
+                    'لم تضف سؤالًا لهذا الحرف، جرب تفعيل الأسئلة العامة';
                 return;
             }
             if (!usedQuestions[letter]) usedQuestions[letter] = [];
@@ -1085,9 +1298,9 @@
                 document.getElementById('newQuestionInput').value = '';
                 document.getElementById('newAnswerInput').value = '';
                 document.getElementById('questionLetter').value = '';
-                alert('تم إضافة السؤال والإجابة بنجاح!');
+                document.getElementById('adminStatus').textContent = 'تم إضافة السؤال بنجاح!';
             } else {
-                alert('يرجى إدخال السؤال والإجابة وحرف السؤال!');
+                document.getElementById('adminError').textContent = 'يرجى إدخال السؤال والإجابة وحرف السؤال!';
             }
         });
 
@@ -1124,11 +1337,6 @@
                 info.textContent = '';
                 if (!isHost) buzzerButton.disabled = false;
             }
-        }
-
-        function assignRandomTeam(name) {
-            document.getElementById('teamInfo').textContent = 'جاري تحديد فريقك...';
-            // لا تقم بإضافة الاسم إلى DOM هنا، دع الخادم يتولى ذلك عبر updateTeams
         }
 
         function updateTeams(teams) {
@@ -1192,7 +1400,7 @@
         }
 
         function updateCodesCount() {
-            if (ws && ws.readyState === WebSocket.OPEN) {
+            if (isAdmin && ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'getCodesCount', data: { phoneNumber } }));
             }
         }
@@ -1234,6 +1442,5 @@
             });
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </body>
 </html>
