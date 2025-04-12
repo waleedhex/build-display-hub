@@ -8,13 +8,13 @@
     "heroku-prebuild": "echo Node version: $(node --version) && echo npm version: $(npm --version)"
   },
   "dependencies": {
-    "express": "^4.17.1",
-    "ws": "^8.5.0",
-    "pg": "^8.7.3",
+    "express": "^4.19.2",
+    "ws": "^8.18.0",
+    "pg": "^8.12.0",
     "uuid": "^9.0.0"
   },
   "engines": {
-    "node": "18.x",
-    "npm": "8.x"
+    "node": "22.x",
+    "npm": "10.x"
   }
 }
