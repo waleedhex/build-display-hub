@@ -747,44 +747,47 @@ wss.on('connection', (ws) => {
                 }
                 break;
 
-            case 'backup':
-                const adminCheckBackup = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
-                if (adminCheckBackup.rows.length > 0) {
-                    try {
-                        const timestamp = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
-                        const filename = `backup_${timestamp}.sql`;
-                        let sqlDump = '-- Backup generated on ' + new Date().toISOString() + '\n\n';
+case 'backup':
+    const adminCheckBackup = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
+    if (adminCheckBackup.rows.length > 0) {
+        try {
+            const timestamp = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+            const filename = `backup_${timestamp}.sql`;
+            let sqlDump = '-- Backup generated on ' + new Date().toISOString() + '\n\n';
 
-                        const tables = ['subscribers', 'general_questions', 'session_questions'];
-                        for (const table of tables) {
-                            const result = await db.query(`SELECT column_name FROM information_schema.columns WHERE table_name = $1`, [table]);
-                            const columns = result.rows.map(row => row.column_name).join(', ');
-                            sqlDump += `TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE;\n`;
+            const tables = ['subscribers', 'general_questions', 'session_questions', 'sessions', 'tokens'];
+            for (const table of tables) {
+                const result = await db.query(`SELECT column_name FROM information_schema.columns WHERE table_name = $1`, [table]);
+                const columns = result.rows.map(row => row.column_name).join(', ');
+                sqlDump += `TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE;\n`;
 
-                            const data = await db.query(`SELECT * FROM ${table}`);
-                            if (data.rows.length > 0) {
-                                sqlDump += `INSERT INTO ${table} (${columns}) VALUES\n`;
-                                data.rows.forEach((row, index) => {
-                                    const values = result.rows.map(col => {
-                                        const value = row[col.column_name];
-                                        if (value === null) return 'NULL';
-                                        if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
-                                        if (typeof value === 'number') return value;
-                                        return `'${value.toString().replace(/'/g, "''")}'`;
-                                    }).join(', ');
-                                    sqlDump += `(${values})${index < data.rows.length - 1 ? ',' : ';'}\n`;
-                                });
-                                sqlDump += '\n';
+                const data = await db.query(`SELECT * FROM ${table}`);
+                if (data.rows.length > 0) {
+                    sqlDump += `INSERT INTO ${table} (${columns}) VALUES\n`;
+                    data.rows.forEach((row, index) => {
+                        const values = result.rows.map(col => {
+                            const value = row[col.column_name];
+                            if (value === null) return 'NULL';
+                            if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
+                            if (typeof value === 'number') return value;
+                            if (col.column_name.includes('_at') && value instanceof Date) {
+                                // تحويل التاريخ لصيغة PostgreSQL
+                                return `'${value.toISOString().replace('T', ' ').split('.')[0]}'`;
                             }
-                        }
-
-                        ws.send(JSON.stringify({ type: 'backupCreated', data: { filename, content: sqlDump } }));
-                    } catch (err) {
-                        ws.send(JSON.stringify({ type: 'adminError', data: 'خطأ في إنشاء النسخة الاحتياطية: ' + err.message }));
-                    }
+                            return `'${value.toString().replace(/'/g, "''")}'`;
+                        }).join(', ');
+                        sqlDump += `(${values})${index < data.rows.length - 1 ? ',' : ';'}\n`;
+                    });
+                    sqlDump += '\n';
                 }
-                break;
+            }
 
+            ws.send(JSON.stringify({ type: 'backupCreated', data: { filename, content: sqlDump } }));
+        } catch (err) {
+            ws.send(JSON.stringify({ type: 'adminError', data: 'خطأ في إنشاء النسخة الاحتياطية: ' + err.message }));
+        }
+    }
+    break;
             case 'restore':
                 const adminCheckRestore = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
                 if (adminCheckRestore.rows.length > 0) {
