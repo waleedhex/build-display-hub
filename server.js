@@ -545,7 +545,7 @@ wss.on('connection', (ws) => {
                         if (result.rows.length > 0) {
                             ws.send(JSON.stringify({ type: 'adminError', data: 'الرمز موجود مسبقًا' }));
                         } else {
-                            awaitNONE db.query('INSERT INTO subscribers (code) VALUES ($1)', [code]);
+                            await db.query('INSERT INTO subscribers (code) VALUES ($1)', [code]);
                             ws.send(JSON.stringify({ type: 'manualCodeAdded', data: code }));
                         }
                     }
