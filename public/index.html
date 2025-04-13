@@ -1487,10 +1487,6 @@
             ev.dataTransfer.setData('text', ev.target.dataset.name);
         }
 
-        function allowDrop(ev) {
-            ev.preventDefault();
-        }
-
 function drop(ev) {
     ev.preventDefault();
     const name = ev.dataTransfer.getData('text');
@@ -1546,6 +1542,174 @@ function displaySessionQuestions(questions) {
         div.innerHTML = `<input type="checkbox" data-letter="${q.letter}" data-question="${q.question}" data-answer="${q.answer}"> ${q.letter} - ${q.question} - ${q.answer}`;
         list.appendChild(div);
     });
+}
+
+// تحسينات لمعالجة مشكلة إدخال الرمز
+document.getElementById('submitPhoneButton').addEventListener('click', () => {
+    const input = document.getElementById('phoneNumber').value.trim().toUpperCase();
+    if (!input) {
+        document.getElementById('phoneError').innerText = 'الرجاء إدخال رمز الجلسة!';
+        document.getElementById('phoneError').className = 'error-message';
+        return;
+    }
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        document.getElementById('phoneError').innerText = 'جاري التحقق من الرمز...';
+        document.getElementById('phoneError').className = '';
+        ws.send(JSON.stringify({ type: 'verifyPhone', data: { phoneNumber: input } }));
+    } else {
+        document.getElementById('phoneError').innerText = 'لا يوجد اتصال بالخادم، جاري إعادة المحاولة...';
+        document.getElementById('phoneError').className = 'error-message';
+        connectWebSocket(); // محاولة إعادة الاتصال
+    }
+});
+
+function handleMessages(event) {
+    const { type, data } = JSON.parse(event.data);
+    if (type === 'codeVerified') {
+        phoneNumber = document.getElementById('phoneNumber').value.trim().toUpperCase();
+        isAdmin = (phoneNumber === 'IMWRA143');
+        document.getElementById('phoneScreen').classList.remove('active');
+        document.getElementById('welcomeScreen').classList.add('active');
+        document.getElementById('phoneError').innerText = '';
+        document.getElementById('phoneNumber').value = ''; // تصفير الحقل
+        if (isAdmin) {
+            document.getElementById('adminPanel').style.display = 'block';
+            fetchGeneralQuestions();
+            fetchSessionQuestions();
+            updateCodesCount();
+        }
+    } else if (type === 'codeError') {
+        document.getElementById('phoneError').innerText = data;
+        document.getElementById('phoneError').className = 'error-message';
+    } else if (type === 'init') {
+        token = data.token || token;
+        if (token) {
+            localStorage.setItem('sessionToken', token);
+            console.log('Token saved to localStorage:', token);
+        }
+        defaultQuestions = data.questions || {};
+        currentColorSetIndex = data.colorSetIndex;
+        isSwapped = data.isSwapped;
+        updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+        updateTeams(data.teams);
+        updateBuzzer(data.buzzer);
+    } else if (type === 'codesGenerated') {
+        const generatedCodesDiv = document.getElementById('generatedCodes');
+        generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
+        document.getElementById('adminStatus').innerText = 'تم توليد الرموز بنجاح';
+        document.getElementById('adminStatus').className = 'success-message';
+        document.getElementById('copyCodesButton').style.display = 'inline';
+        updateCodesCount();
+    } else if (type === 'manualCodeAdded') {
+        document.getElementById('generatedCodes').innerHTML = `تم إضافة الرمز: ${data}`;
+        document.getElementById('adminStatus').innerText = 'تمت الإضافة بنجاح';
+        document.getElementById('adminStatus').className = 'success-message';
+        document.getElementById('copyCodesButton').style.display = 'none';
+        updateCodesCount();
+    } else if (type === 'codeDeleted') {
+        document.getElementById('generatedCodes').innerHTML = `تم حذف الرمز: ${data}`;
+        document.getElementById('adminStatus').innerText = 'تم الحذف بنجاح';
+        document.getElementById('adminStatus').className = 'success-message';
+        document.getElementById('copyCodesButton').style.display = 'none';
+        updateCodesCount();
+    } else if (type === 'codesDeleted') {
+        document.getElementById('adminStatus').innerText = `تم حذف ${data.length} رمز`;
+        document.getElementById('adminStatus').className = 'success-message';
+        document.getElementById('generatedCodes').innerHTML = '';
+        updateCodesCount();
+    } else if (type === 'adminError') {
+        document.getElementById('adminError').innerText = data;
+        document.getElementById('adminError').style.color = 'red';
+        document.getElementById('adminStatus').innerText = '';
+    } else if (type === 'generalQuestions') {
+        displayGeneralQuestions(data);
+        document.getElementById('questionsCount').innerText = `عدد الأسئلة العامة: ${data.length}`;
+    } else if (type === 'sessionQuestions') {
+        displaySessionQuestions(data);
+    } else if (type === 'generalQuestionAdded' || type === 'generalQuestionsAdded') {
+        document.getElementById('adminStatus').innerText = data;
+        document.getElementById('adminStatus').className = 'success-message';
+        fetchGeneralQuestions();
+    } else if (type === 'generalQuestionsDeleted') {
+        document.getElementById('adminStatus').innerText = 'تم حذف الأسئلة المحددة';
+        document.getElementById('adminStatus').className = 'success-message';
+        fetchGeneralQuestions();
+    } else if (type === 'addedToGeneral') {
+        document.getElementById('adminStatus').innerText = 'تم إضافة الأسئلة المحددة إلى العام';
+        document.getElementById('adminStatus').className = 'success-message';
+        fetchGeneralQuestions();
+        fetchSessionQuestions();
+    } else if (type === 'codesCount') {
+        document.getElementById('codesCount').innerText = `إجمالي عدد الرموز: ${data}`;
+    } else if (type === 'backupCreated') {
+        const { filename, content } = data;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        document.getElementById('adminStatus').innerText = 'تم إنشاء النسخة الاحتياطية، الملف محفوظ';
+        document.getElementById('adminStatus').className = 'success-message';
+    } else if (type === 'restoreSuccess') {
+        document.getElementById('adminStatus').innerText = 'تم استعادة البيانات بنجاح';
+        document.getElementById('adminStatus').style.color = 'green';
+        document.getElementById('adminError').innerText = '';
+        document.getElementById('restoreFile').value = '';
+    } else if (type === 'updateHexagon') {
+        const hex = document.querySelector(`#${isHost ? 'hexGridHost' : 'hexGridContestant'} .changeable[data-letter="${data.letter}"]`);
+        if (hex) {
+            hex.style.backgroundColor = data.color;
+            hex.dataset.clickCount = data.clickCount;
+            if (data.clickCount === '1') {
+                currentQuestionLetter = data.letter;
+                showQuestionAndAnswer(data.letter);
+            } else if (data.clickCount === '0') {
+                document.getElementById('currentQuestion').innerText = '';
+            }
+        }
+    } else if (type === 'shuffle') {
+        updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+        stopPartyMode();
+    } else if (type === 'swapColors') {
+        isSwapped = data.isSwapped;
+        updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+    } else if (type === 'changeColors') {
+        currentColorSetIndex = data.colorSetIndex;
+        updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
+        stopPartyMode();
+    } else if (type === 'party') {
+        if (data.active) startPartyMode(); else stopPartyMode();
+    } else if (type === 'buzzer') {
+        updateBuzzer(data);
+        if (data.active && isHost) {
+            const audio = document.getElementById('buzzerSound');
+            audio.play().catch(err => console.error('Error playing buzzer sound:', err));
+        }
+    } else if (type === 'timeUp') {
+        updateBuzzer({ active: false, player: '', message: 'انتهى الوقت' });
+        setTimeout(() => {
+            updateBuzzer({ active: false, player: '' });
+        }, 3000);
+    } else if (type === 'resetBuzzer') {
+        updateBuzzer({ active: false, player: '' });
+    } else if (type === 'updateTeams') {
+        updateTeams(data);
+    } else if (type === 'updateQuestions') {
+        defaultQuestions = data;
+    } else if (type === 'joinError') {
+        document.getElementById('welcomeScreen').classList.add('active');
+        document.getElementById('hostScreen').classList.remove('active');
+        document.getElementById('contestantScreen').classList.remove('active');
+    } else if (type === 'error') {
+        if (data.includes('رمز مؤقت غير صالح') || data.includes('الجلسة غير موجودة')) {
+            resetToPhoneScreen();
+        }
+    }
 }
     </script>
 </body>
