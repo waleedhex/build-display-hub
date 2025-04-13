@@ -381,6 +381,65 @@
         .backup-btn:hover {
             background-color: #FFA000;
         }
+        /* تعديل الشاشة الشفافة (الاتفاق الأول) */
+        #connectionLost {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        #connectionLost p {
+            margin: 10px 0;
+            font-size: 18px;
+            font-family: 'Tahoma', sans-serif;
+            color: #333;
+            text-align: center;
+        }
+        #connectionLost p.dots::after {
+            content: '...';
+            animation: dots 1.5s infinite;
+        }
+        @keyframes dots {
+            0% { content: ''; }
+            33% { content: '.'; }
+            66% { content: '..'; }
+            100% { content: '...'; }
+        }
+        #connectionLost .spinner {
+            width: 32px;
+            height: 32px;
+            border: 4px solid #4b0082;
+            border-top: 4px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #connectionLost button {
+            padding: 8px 16px;
+            margin: 5px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #connectionLost button:hover {
+            background-color: #0056b3;
+        }
         @media (max-width: 600px) {
             .hex-grid {
                 width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
@@ -451,6 +510,17 @@
             }
             .toggle-label {
                 font-size: 12px;
+            }
+            #connectionLost {
+                width: 180px;
+                height: 130px;
+            }
+            #connectionLost p {
+                font-size: 16px;
+            }
+            #connectionLost .spinner {
+                width: 28px;
+                height: 28px;
             }
         }
     </style>
@@ -627,7 +697,7 @@
         let playerName = '';
         let token = localStorage.getItem('sessionToken') || null;
         let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
+        const maxReconnectAttempts = 10;
         const reconnectInterval = 3000;
 
         function connectWebSocket() {
@@ -644,8 +714,6 @@
                     } else if (phoneNumber && playerName) {
                         console.log('Joining with phoneNumber and playerName:', phoneNumber, playerName);
                         ws.send(JSON.stringify({ type: 'join', data: { role: isHost ? 'host' : 'contestant', name: playerName, phoneNumber } }));
-                    } else {
-                        console.log('No token or phoneNumber, staying on phone screen');
                     }
                 };
                 ws.onerror = (error) => {
@@ -661,10 +729,8 @@
                             connectWebSocket();
                         }, reconnectInterval);
                     } else {
-                        console.log('Max reconnection attempts reached, resetting to phone screen');
-                        document.getElementById('phoneError').textContent = 'تعذر الاتصال، حاول مرة أخرى لاحقًا.';
-                        showConnectionLost();
-                        resetToPhoneScreen();
+                        console.log('Max reconnection attempts reached');
+                        showConnectionLost(true);
                     }
                 };
                 ws.onmessage = handleMessages;
@@ -677,19 +743,26 @@
             }
         }
 
-        function showConnectionLost() {
+        function showConnectionLost(failed = false) {
             let connectionLostDiv = document.getElementById('connectionLost');
             if (!connectionLostDiv) {
                 connectionLostDiv = document.createElement('div');
                 connectionLostDiv.id = 'connectionLost';
-                connectionLostDiv.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); color: white; display: flex; justify-content: center; align-items: center; flex-direction: column;';
-                connectionLostDiv.innerHTML = `
-                    <p>تم فقدان الاتصال بالخادم</p>
-                    <p>يرجى إعادة المحاولة أو إدخال رمز جلسة جديد</p>
-                    <button onclick="reconnectManually()">إعادة المحاولة</button>
-                    <button onclick="resetToPhoneScreen()" style="margin-top: 10px;">إدخال رمز جديد</button>
-                `;
                 document.body.appendChild(connectionLostDiv);
+            }
+            if (failed) {
+                connectionLostDiv.innerHTML = `
+                    <p>تعذر الاتصال</p>
+                    <button onclick="resetToPhoneScreen()">الرجوع للجلسة</button>
+                `;
+                connectionLostDiv.querySelector('.spinner')?.style.display = 'none';
+                connectionLostDiv.querySelector('button').style.display = 'block';
+            } else {
+                connectionLostDiv.innerHTML = `
+                    <p class="dots">جاري إعادة الاتصال</p>
+                    <div class="spinner"></div>
+                    <button onclick="resetToPhoneScreen()">الرجوع للجلسة</button>
+                `;
             }
             connectionLostDiv.style.display = 'flex';
         }
@@ -717,6 +790,7 @@
             playerName = '';
             isHost = false;
             isAdmin = false;
+            hideConnectionLost();
         }
 
         function handleMessages(event) {
@@ -774,9 +848,9 @@
                 document.getElementById('generatedCodes').innerHTML = '';
                 updateCodesCount();
             } else if (type === 'adminError') {
+                document.getElementById('adminStatus').textContent = '';
                 document.getElementById('adminError').textContent = data;
                 document.getElementById('adminError').className = 'error-message';
-                document.getElementById('adminStatus').textContent = '';
             } else if (type === 'generalQuestions') {
                 displayGeneralQuestions(data);
                 document.getElementById('questionsCount').textContent = `عدد الأسئلة العامة: ${data.length}`;
@@ -812,6 +886,8 @@
                 document.getElementById('adminStatus').textContent = 'تم إنشاء النسخة الاحتياطية، الملف محفوظ';
                 document.getElementById('adminStatus').className = 'success-message';
             } else if (type === 'restoreSuccess') {
+                document.getElementById('adminStatus').textContent = '';
+                document.getElementById('adminError').textContent = '';
                 document.getElementById('adminStatus').textContent = data;
                 document.getElementById('adminStatus').className = 'success-message';
                 document.getElementById('restoreFile').value = '';
@@ -1082,6 +1158,7 @@
                     const sqlContent = e.target.result;
                     if (confirm('هل أنت متأكد؟ هذا سيحذف البيانات الحالية وقد يؤثر على الجلسات النشطة.')) {
                         document.getElementById('adminStatus').textContent = 'جاري استعادة البيانات...';
+                        document.getElementById('adminError').textContent = '';
                         ws.send(JSON.stringify({ type: 'restore', data: { sqlContent, phoneNumber } }));
                     }
                 };
@@ -1398,149 +1475,11 @@
                             bubble.textContent = name;
                             bubble.dataset.name = name;
                             if (isHost) {
-                                bubble.draggable = true;
-                                bubble.addEventListener('dragstart', drag);
-                            }
-                            teamList.appendChild(bubble);
+
+                            bubble.draggable = true;
+                            bubble.addEventListener('dragstart', drag);
                         }
-                    });
-                }
-                if (!isHost && playerName && teams[team].includes(playerName)) {
-                    document.getElementById('teamInfo').textContent = `أنت في الفريق ${team === 'red' ? 'الأحمر' : 'الأخضر'}`;
-                }
-            });
-        }
-
-        function updateTeamsFromDOM() {
-            const teams = { red: [], green: [] };
-            ['red', 'green'].forEach(team => {
-                document.querySelectorAll(`#${team}TeamList .player-bubble`).forEach(bubble => {
-                    teams[team].push(bubble.dataset.name);
-                });
-            });
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'updateTeams', data: { teams, phoneNumber } }));
-            }
-        }
-
-        function drag(ev) {
-            ev.dataTransfer.setData('text', ev.target.dataset.name);
-        }
-
-        function allowDrop(ev) {
-            ev.preventDefault();
-        }
-
-        function drop(ev) {
-            ev.preventDefault();
-            const name = ev.dataTransfer.getData('text');
-            const oldTeam = document.querySelector(`.player-bubble[data-name="${name}"]`).parentElement.id === 'redTeamList' ? 'red' : 'green';
-            const newTeam = ev.target.closest('#redTeamList') ? 'red' : 'green';
-            if (oldTeam !== newTeam) {
-                const bubble = document.querySelector(`.player-bubble[data-name="${name}"]`);
-                bubble.classList.remove(oldTeam);
-                bubble.classList.add(newTeam);
-                ev.target.closest('.team-list').appendChild(bubble);
-                updateTeamsFromDOM();
-            }
-        }
-
-        function updateCodesCount() {
-            if (isAdmin && ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'getCodesCount', data: { phoneNumber } }));
-            }
-        }
-
-        function fetchGeneralQuestions() {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                const letter = document.getElementById('generalLetterFilter').value;
-                ws.send(JSON.stringify({ type: 'getGeneralQuestions', data: { letter, phoneNumber } }));
-            }
-        }
-
-        function fetchSessionQuestions() {
-            const letter = document.getElementById('sessionLetterFilter').value;
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ type: 'getSessionQuestions', data: { letter, phoneNumber } }));
-            }
-        }
-
-        function displayGeneralQuestions(questions) {
-            const list = document.getElementById('generalQuestionsList');
-            list.innerHTML = '';
-            questions.forEach(q => {
-                const div = document.createElement('div');
-                div.className = 'question-item';
-                div.innerHTML = `<input type="checkbox" data-id="${q.id}"> ${q.letter} - ${q.question} - ${q.answer}`;
-                list.appendChild(div);
-            });
-            document.getElementById('questionsCount').textContent = `عدد الأسئلة العامة: ${questions.length}`;
-        }
-
-        function displaySessionQuestions(questions) {
-            const list = document.getElementById('sessionQuestionsList');
-            list.innerHTML = '';
-            questions.forEach(q => {
-                const div = document.createElement('div');
-                div.className = 'question-item';
-                div.innerHTML = `<input type="checkbox" data-letter="${q.letter}" data-question="${q.question}" data-answer="${q.answer}"> ${q.letter} - ${q.question} - ${q.answer}`;
-                list.appendChild(div);
-            });
-        }
-
-        function updateGrid(hexagons, lettersOrder, gridId) {
-            const gridHexagons = document.querySelectorAll(`#${gridId} .changeable`);
-            gridHexagons.forEach((hex, index) => {
-                const letter = lettersOrder[index];
-                hex.textContent = letter;
-                hex.dataset.letter = letter;
-                hex.style.backgroundColor = hexagons[letter].color;
-                hex.dataset.clickCount = hexagons[letter].clickCount;
-            });
-            const redHexagons = document.querySelectorAll(`#${gridId} .red-fixed`);
-            const greenHexagons = document.querySelectorAll(`#${gridId} .green-fixed`);
-            const currentSet = colorSets[currentColorSetIndex];
-            redHexagons.forEach(hex => {
-                hex.style.backgroundColor = isSwapped ? currentSet.green : currentSet.red;
-            });
-            greenHexagons.forEach(hex => {
-                hex.style.backgroundColor = isSwapped ? currentSet.red : currentSet.green;
-            });
-        }
-
-        function updateBuzzer(buzzer) {
-            const buzzerButton = document.getElementById('buzzerButton');
-            const info = document.getElementById(isHost ? 'buzzerInfo' : 'contestantBuzzerInfo');
-            if (buzzer.message) {
-                info.textContent = buzzer.message;
-                if (!isHost) buzzerButton.disabled = false;
-            } else if (buzzer.active) {
-                info.textContent = `${buzzer.player} ضغط الجرس!`;
-                if (!isHost) buzzerButton.disabled = true;
-            } else {
-                info.textContent = '';
-                if (!isHost) buzzerButton.disabled = false;
-            }
-        }
-
-        function updateTeams(teams) {
-            console.log('تحديث الفرق باستخدام:', teams);
-            ['red', 'green'].forEach(team => {
-                const teamList = document.getElementById(`${team}TeamList`);
-                teamList.innerHTML = `<h3>الفريق ${team === 'red' ? 'الأحمر' : 'الأخضر'}</h3>`;
-                if (teams[team] && Array.isArray(teams[team])) {
-                    teams[team].forEach(name => {
-                        if (!teamList.querySelector(`.player-bubble[data-name="${name}"]`)) {
-                            const bubble = document.createElement('div');
-                            bubble.className = `player-bubble ${team}`;
-                            bubble.textContent = name;
-                            bubble.dataset.name = name;
-                            if (isHost) {
-                                bubble.draggable = true;
-                                bubble.addEventListener('dragstart', drag);
-                            }
-                            teamList.appendChild(bubble);
-                        }
+                        teamList.appendChild(bubble);
                     });
                 }
                 if (!isHost && playerName && teams[team].includes(playerName)) {
