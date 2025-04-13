@@ -1559,9 +1559,91 @@ document.getElementById('submitPhoneButton').addEventListener('click', () => {
     } else {
         document.getElementById('phoneError').innerText = 'لا يوجد اتصال بالخادم، جاري إعادة المحاولة...';
         document.getElementById('phoneError').className = 'error-message';
-        connectWebSocket(); // محاولة إعادة الاتصال
+        connectWebSocket();
     }
 });
+
+function connectWebSocket() {
+    try {
+        ws = new WebSocket(window.location.protocol === 'https:' ? 'wss://' + window.location.host : 'ws://' + window.location.host);
+        ws.onopen = () => {
+            console.log('Connected to WebSocket');
+            reconnectAttempts = 0;
+            hideConnectionLost();
+            if (token) {
+                console.log('Attempting to reconnect with token:', token);
+                ws.send(JSON.stringify({ type: 'reconnect', data: { token } }));
+            } else if (phoneNumber && playerName) {
+                console.log('Joining with phoneNumber and playerName:', phoneNumber, playerName);
+                ws.send(JSON.stringify({ type: 'join', data: { role: isHost ? 'host' : 'contestant', name: playerName, phoneNumber } }));
+            }
+        };
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            showConnectionLost();
+        };
+        ws.onclose = () => {
+            if (reconnectAttempts < 10) {
+                setTimeout(() => {
+                    reconnectAttempts++;
+                    console.log(`Reconnection attempt ${reconnectAttempts}`);
+                    showConnectionLost();
+                    connectWebSocket();
+                }, 3000);
+            } else {
+                console.log('Max reconnection attempts reached, showing return button');
+                showConnectionLost(true);
+            }
+        };
+        ws.onmessage = handleMessages;
+        ws.onpong = () => {
+            console.log('Received pong from server');
+        };
+    } catch (error) {
+        console.error('Failed to initialize WebSocket:', error);
+        showConnectionLost();
+    }
+}
+
+function showConnectionLost(showButton = false) {
+    let connectionLostDiv = document.getElementById('connectionLost');
+    if (!connectionLostDiv) {
+        connectionLostDiv = document.createElement('div');
+        connectionLostDiv.id = 'connectionLost';
+        connectionLostDiv.className = 'connection-lost';
+        connectionLostDiv.innerHTML = `
+            <div class="spinner"></div>
+            <p>جاري إعادة الاتصال...</p>
+            <button id="returnToSession" onclick="resetToPhoneScreen()">العودة للجلسة</button>
+        `;
+        document.body.appendChild(connectionLostDiv);
+    }
+    const button = connectionLostDiv.querySelector('#returnToSession');
+    button.style.display = showButton ? 'block' : 'none';
+    connectionLostDiv.style.display = 'flex';
+}
+
+function hideConnectionLost() {
+    const connectionLostDiv = document.getElementById('connectionLost');
+    if (connectionLostDiv) {
+        connectionLostDiv.style.display = 'none';
+    }
+}
+
+function resetToPhoneScreen() {
+    document.getElementById('hostScreen').classList.remove('active');
+    document.getElementById('contestantScreen').classList.remove('active');
+    document.getElementById('welcomeScreen').classList.remove('active');
+    document.getElementById('phoneScreen').classList.add('active');
+    localStorage.removeItem('sessionToken');
+    token = null;
+    phoneNumber = null;
+    playerName = '';
+    isHost = false;
+    isAdmin = false;
+    reconnectAttempts = 0;
+    hideConnectionLost();
+}
 
 function handleMessages(event) {
     const { type, data } = JSON.parse(event.data);
@@ -1571,7 +1653,7 @@ function handleMessages(event) {
         document.getElementById('phoneScreen').classList.remove('active');
         document.getElementById('welcomeScreen').classList.add('active');
         document.getElementById('phoneError').innerText = '';
-        document.getElementById('phoneNumber').value = ''; // تصفير الحقل
+        document.getElementById('phoneNumber').value = '';
         if (isAdmin) {
             document.getElementById('adminPanel').style.display = 'block';
             fetchGeneralQuestions();
