@@ -4,6 +4,7 @@ const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
+const XLSX = require('xlsx');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -169,7 +170,7 @@ async function loadSession(sessionId) {
 
 async function generateToken(sessionId, playerName, role) {
     const token = uuidv4();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // صلاحية 7 أيام
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await db.query(
         'INSERT INTO tokens (token, session_id, player_name, role, created_at, expires_at) VALUES ($1, $2, $3, $4, NOW(), $5)',
         [token, sessionId, playerName, role, expiresAt]
@@ -478,11 +479,14 @@ wss.on('connection', (ws) => {
                     await saveSession(ws.sessionId, session);
                     broadcast(ws.sessionId, { type: 'buzzer', data: session.buzzer }, null);
                     setTimeout(() => {
+                        broadcast(ws.sessionId, { type: 'timeUpWarning', data: { message: 'انتهى الوقت!' } }, null);
+                    }, 6000);
+                    setTimeout(() => {
                         session.buzzer = { active: false, player: '' };
                         session.buzzerLock = false;
                         broadcast(ws.sessionId, { type: 'timeUp', data: {} }, null);
                         saveSession(ws.sessionId, session);
-                    }, 6000);
+                    }, 7000);
                 }
                 break;
 
@@ -747,70 +751,78 @@ wss.on('connection', (ws) => {
                 }
                 break;
 
-case 'backup':
-    const adminCheckBackup = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
-    if (adminCheckBackup.rows.length > 0) {
-        try {
-            const timestamp = new Date().toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
-            const filename = `backup_${timestamp}.sql`;
-            let sqlDump = '-- Backup generated on ' + new Date().toISOString() + '\n\n';
-
-            const tables = ['subscribers', 'general_questions', 'session_questions', 'sessions', 'tokens'];
-            for (const table of tables) {
-                const result = await db.query(`SELECT column_name FROM information_schema.columns WHERE table_name = $1`, [table]);
-                const columns = result.rows.map(row => row.column_name).join(', ');
-                sqlDump += `TRUNCATE TABLE ${table} RESTART IDENTITY CASCADE;\n`;
-
-                const data = await db.query(`SELECT * FROM ${table}`);
-                if (data.rows.length > 0) {
-                    sqlDump += `INSERT INTO ${table} (${columns}) VALUES\n`;
-                    data.rows.forEach((row, index) => {
-                        const values = result.rows.map(col => {
-                            const value = row[col.column_name];
-                            if (value === null) return 'NULL';
-                            if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
-                            if (typeof value === 'number') return value;
-                            if (col.column_name.includes('_at') && value instanceof Date) {
-                                // تحويل التاريخ لصيغة PostgreSQL
-                                return `'${value.toISOString().replace('T', ' ').split('.')[0]}'`;
-                            }
-                            return `'${value.toString().replace(/'/g, "''")}'`;
-                        }).join(', ');
-                        sqlDump += `(${values})${index < data.rows.length - 1 ? ',' : ';'}\n`;
-                    });
-                    sqlDump += '\n';
-                }
-            }
-
-            ws.send(JSON.stringify({ type: 'backupCreated', data: { filename, content: sqlDump } }));
-        } catch (err) {
-            ws.send(JSON.stringify({ type: 'adminError', data: 'خطأ في إنشاء النسخة الاحتياطية: ' + err.message }));
-        }
-    }
-    break;
-            case 'restore':
-                const adminCheckRestore = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
-                if (adminCheckRestore.rows.length > 0) {
+            case 'exportCodes':
+                const adminCheckExport = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
+                if (adminCheckExport.rows.length > 0) {
                     try {
-                        const sqlContent = data.sqlContent;
-                        if (!sqlContent.includes('INSERT INTO') && !sqlContent.includes('CREATE TABLE')) {
-                            ws.send(JSON.stringify({ type: 'adminError', data: 'الملف لا يحتوي على أوامر SQL صالحة!' }));
+                        const result = await db.query('SELECT code FROM subscribers');
+                        const codes = result.rows.map(row => row.code);
+                        if (codes.length === 0) {
+                            ws.send(JSON.stringify({ type: 'adminError', data: 'لا توجد رموز للتصدير' }));
                             return;
+                        }
+                        const today = new Date().toISOString().slice(0, 10);
+                        const wsExcel = XLSX.utils.json_to_sheet(codes.map(code => ({ [`Code_${today}`]: code })));
+                        const wb = XLSX.utils.book_new();
+                        XLSX.utils.book_append_sheet(wb, wsExcel, 'Codes');
+                        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' });
+                        ws.send(JSON.stringify({
+                            type: 'codesExported',
+                            data: {
+                                filename: `codes_${today}.xlsx`,
+                                content: excelBuffer.toString('base64')
+                            }
+                        }));
+                    } catch (err) {
+                        ws.send(JSON.stringify({ type: 'adminError', data: 'فشل نسخ الرموز، حاول مرة أخرى: ' + err.message }));
+                    }
+                }
+                break;
+
+            case 'importCodes':
+                const adminCheckImport = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
+                if (adminCheckImport.rows.length > 0) {
+                    try {
+                        const buffer = Buffer.from(data.content, 'base64');
+                        const workbook = XLSX.read(buffer, { type: 'buffer' });
+                        const sheetName = workbook.SheetNames[0];
+                        const sheet = workbook.Sheets[sheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                        if (jsonData.length <= 1) {
+                            ws.send(JSON.stringify({ type: 'adminError', data: 'الملف فاضي أو لا يحتوي على رموز' }));
+                            return;
+                        }
+                        const codes = jsonData.slice(1).map(row => row[0]?.toString().toUpperCase()).filter(code => code);
+                        const invalidCodes = codes.filter(code => !code || code.length !== 6 || !/^[A-Z0-9]+$/.test(code));
+                        if (invalidCodes.length > 0) {
+                            ws.send(JSON.stringify({ type: 'adminError', data: `يوجد رموز غير صالحة (مثل: ${invalidCodes.slice(0, 3).join(', ')})` }));
+                            return;
+                        }
+                        const uniqueCodes = [...new Set(codes)];
+                        if (uniqueCodes.length !== codes.length) {
+                            ws.send(JSON.stringify({ type: 'adminError', data: 'الملف يحتوي على رموز مكررة' }));
+                            return;
+                        }
+                        if (uniqueCodes.includes('IMWRA143')) {
+                            uniqueCodes.splice(uniqueCodes.indexOf('IMWRA143'), 1);
                         }
                         const client = await db.connect();
                         try {
                             await client.query('BEGIN');
-                            await client.query(sqlContent);
+                            await client.query('DELETE FROM subscribers WHERE is_admin = FALSE');
+                            for (const code of uniqueCodes) {
+                                await client.query('INSERT INTO subscribers (code) VALUES ($1)', [code]);
+                            }
                             await client.query('COMMIT');
-                            ws.send(JSON.stringify({ type: 'restoreSuccess', data: 'تم استعادة البيانات بنجاح' }));
+                            ws.send(JSON.stringify({ type: 'codesImported', data: 'تم إدخال الرموز بنجاح' }));
                         } catch (err) {
                             await client.query('ROLLBACK');
-                            ws.send(JSON.stringify({ type: 'adminError', data: 'خطأ في استعادة البيانات: ' + err.message }));
+                            ws.send(JSON.stringify({ type: 'adminError', data: 'فشل إدخال الرموز، تحقق من الملف وحاول مرة أخرى: ' + err.message }));
                         } finally {
                             client.release();
                         }
                     } catch (err) {
-                        ws.send(JSON.stringify({ type: 'adminError', data: 'ملف غير صالح: ' + err.message }));
+                        ws.send(JSON.stringify({ type: 'adminError', data: 'الملف غير صالح: ' + err.message }));
                     }
                 }
                 break;
