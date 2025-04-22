@@ -41,7 +41,12 @@ async function initDatabase() {
                 CREATE TABLE IF NOT EXISTS subscribers (
                     code TEXT PRIMARY KEY,
                     is_admin BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT check_code_length_and_format CHECK (
+                        (LENGTH(code) = 6 AND code ~ '^[A-Z0-9]{6}$')
+                        OR
+                        (LENGTH(code) = 7 AND code ~ '^X[A-Z0-9]{6}$')
+                    )
                 )
             `),
             db.query(`
@@ -81,6 +86,30 @@ async function initDatabase() {
                 )
             `)
         ]);
+
+        // التحقق من الرموز الموجودة قبل تطبيق القيد
+        const invalidCodes = await db.query(`
+            SELECT code FROM subscribers
+            WHERE NOT (
+                (LENGTH(code) = 6 AND code ~ '^[A-Z0-9]{6}$')
+                OR
+                (LENGTH(code) = 7 AND code ~ '^X[A-Z0-9]{6}$')
+            )
+        `);
+        if (invalidCodes.rows.length > 0) {
+            console.warn('Invalid codes found:', invalidCodes.rows);
+        }
+
+        // إضافة قيد التحقق للجداول القديمة
+        await db.query(`
+            ALTER TABLE subscribers
+            ADD CONSTRAINT IF NOT EXISTS check_code_length_and_format
+            CHECK (
+                (LENGTH(code) = 6 AND code ~ '^[A-Z0-9]{6}$')
+                OR
+                (LENGTH(code) = 7 AND code ~ '^X[A-Z0-9]{6}$')
+            )
+        `);
 
         const adminCheck = await db.query('SELECT code FROM subscribers WHERE is_admin = TRUE');
         if (adminCheck.rows.length === 0) {
@@ -238,6 +267,31 @@ async function generateUniqueCode() {
     return code;
 }
 
+function generateSpecialCode() {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = 'X';
+    for (let i = 0; i < 6; i++) {
+        code += characters[Math.floor(Math.random() * characters.length)];
+    }
+    return code;
+}
+
+async function generateUniqueSpecialCode() {
+    let attempts = 0;
+    const maxAttempts = 100;
+    let code;
+    do {
+        if (attempts >= maxAttempts) {
+            throw new Error('تعذر توليد رمز خاص فريد بعد عدة محاولات');
+        }
+        code = generateSpecialCode();
+        const result = await db.query('SELECT code FROM subscribers WHERE code = $1', [code]);
+        if (result.rows.length === 0) break;
+        attempts++;
+    } while (true);
+    return code;
+}
+
 async function generateMultipleCodes(count) {
     if (count > MAX_CODES_PER_REQUEST) throw new Error('الحد الأقصى 5000 رمز في المرة الواحدة');
     const newCodes = [];
@@ -246,6 +300,27 @@ async function generateMultipleCodes(count) {
         await client.query('BEGIN');
         for (let i = 0; i < count; i++) {
             const code = await generateUniqueCode();
+            await client.query('INSERT INTO subscribers (code) VALUES ($1)', [code]);
+            newCodes.push(code);
+        }
+        await client.query('COMMIT');
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+    } finally {
+        client.release();
+    }
+    return newCodes;
+}
+
+async function generateMultipleSpecialCodes(count) {
+    if (count > MAX_CODES_PER_REQUEST) throw new Error('الحد الأقصى 5000 رمز في المرة الواحدة');
+    const newCodes = [];
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+        for (let i = 0; i < count; i++) {
+            const code = await generateUniqueSpecialCode();
             await client.query('INSERT INTO subscribers (code) VALUES ($1)', [code]);
             newCodes.push(code);
         }
@@ -538,13 +613,26 @@ wss.on('connection', (ws) => {
                 }
                 break;
 
+            case 'generateSpecialCodes':
+                const adminCheckSpecial = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
+                if (adminCheckSpecial.rows.length > 0) {
+                    try {
+                        const newCodes = await generateMultipleSpecialCodes(data.count);
+                        ws.send(JSON.stringify({ type: 'specialCodesGenerated', data: newCodes }));
+                    } catch (error) {
+                        ws.send(JSON.stringify({ type: 'adminError', data: error.message || 'خطأ في توليد الرموز الخاصة' }));
+                    }
+                }
+                break;
+
             case 'addManualCode':
                 const adminCheckAdd = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
                 if (adminCheckAdd.rows.length > 0) {
                     const code = data.code.toUpperCase();
-                    if (code.length !== 6 || !/^[A-Z0-9]+$/.test(code)) {
-                        ws.send(JSON.stringify({ type: 'adminError', data: 'الرمز يجب أن يكون 6 حروف/أرقام (A-Z, 0-9)' }));
-                    } else {
+                    if (
+                        (code.length === 6 && /^[A-Z0-9]{6}$/.test(code)) ||
+                        (code.length === 7 && /^X[A-Z0-9]{6}$/.test(code))
+                    ) {
                         const result = await db.query('SELECT code FROM subscribers WHERE code = $1', [code]);
                         if (result.rows.length > 0) {
                             ws.send(JSON.stringify({ type: 'adminError', data: 'الرمز موجود مسبقًا' }));
@@ -552,6 +640,8 @@ wss.on('connection', (ws) => {
                             await db.query('INSERT INTO subscribers (code) VALUES ($1)', [code]);
                             ws.send(JSON.stringify({ type: 'manualCodeAdded', data: code }));
                         }
+                    } else {
+                        ws.send(JSON.stringify({ type: 'adminError', data: 'الرمز يجب أن يكون 6 حروف/أرقام (A-Z, 0-9) أو 7 حروف/أرقام يبدأ بـ X' }));
                     }
                 }
                 break;
@@ -793,7 +883,7 @@ wss.on('connection', (ws) => {
                             return;
                         }
                         const codes = jsonData.slice(1).map(row => row[0]?.toString().toUpperCase()).filter(code => code);
-                        const invalidCodes = codes.filter(code => !code || code.length !== 6 || !/^[A-Z0-9]+$/.test(code));
+                        const invalidCodes = codes.filter(code => !code || (code.length !== 6 && code.length !== 7) || (code.length === 6 && !/^[A-Z0-9]{6}$/.test(code)) || (code.length === 7 && !/^X[A-Z0-9]{6}$/.test(code)));
                         if (invalidCodes.length > 0) {
                             ws.send(JSON.stringify({ type: 'adminError', data: `يوجد رموز غير صالحة (مثل: ${invalidCodes.slice(0, 3).join(', ')})` }));
                             return;
