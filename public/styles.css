@@ -545,8 +545,9 @@ input:checked + .slider:before {
     border-radius: 5px;
     outline: none;
     margin: 10px 0;
-    user-select: auto;
-    pointer-events: auto;
+    user-select: auto !important;
+    pointer-events: auto !important;
+    touch-action: auto !important;
 }
 
 .size-slider::-webkit-slider-thumb {

@@ -161,9 +161,6 @@ function handleMessages(event) {
         updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
         updateTeams(data.teams);
         updateBuzzer(data.buzzer);
-        if (isHost) {
-            initializeSizeSlider();
-        }
     } else if (type === 'codesGenerated') {
         const generatedCodesDiv = document.getElementById('generatedCodes');
         generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
@@ -307,19 +304,21 @@ window.onload = () => {
 };
 
 function initializeSizeSlider() {
-    const sizeSlider = document.getElementBy-Id('sizeSlider');
+    const sizeSlider = document.getElementById('sizeSlider');
     if (sizeSlider) {
         sizeSlider.max = 100;
         sizeSlider.min = 40;
         sizeSlider.value = 100;
         document.documentElement.style.setProperty('--grid-width', 1);
-        sizeSlider.addEventListener('input', () => {
+        const updateGridWidth = () => {
             const widthScale = sizeSlider.value / 100;
             console.log('Slider value:', sizeSlider.value, 'Width scale:', widthScale);
             requestAnimationFrame(() => {
                 document.documentElement.style.setProperty('--grid-width', widthScale);
             });
-        });
+        };
+        sizeSlider.addEventListener('input', updateGridWidth);
+        sizeSlider.addEventListener('change', updateGridWidth);
     } else {
         console.error('sizeSlider element not found in DOM');
     }
@@ -353,6 +352,7 @@ document.getElementById('hostButton').addEventListener('click', () => {
         if (ws && ws.readyState === WebSocket.OPEN) {
             ws.send(JSON.stringify({ type: 'join', data: { role: 'host', name, phoneNumber } }));
         }
+        initializeSizeSlider();
     } else {
         document.getElementById('welcomeError').innerText = 'الرجاء إدخال اسمك!';
         document.getElementById('welcomeError').className = 'error-message';
