@@ -1,5 +1,5 @@
 :root {
-    --grid-width: 1;
+    --scale-factor: 1;
 }
 
 body {
@@ -60,7 +60,9 @@ body {
 }
 
 #hexGridHost {
-    width: calc(var(--grid-width) * (7 * (90vw / 7) + 6 * (90vw / 200)));
+    width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+    transform: scale(var(--scale-factor, 1));
+    transform-origin: center center;
 }
 
 #hexGridContestant {

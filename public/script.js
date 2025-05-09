@@ -309,16 +309,16 @@ function initializeSizeSlider() {
         sizeSlider.max = 100;
         sizeSlider.min = 40;
         sizeSlider.value = 100;
-        document.documentElement.style.setProperty('--grid-width', 1);
-        const updateGridWidth = () => {
-            const widthScale = sizeSlider.value / 100;
-            console.log('Slider value:', sizeSlider.value, 'Width scale:', widthScale);
+        document.documentElement.style.setProperty('--scale-factor', 1);
+        const updateGridScale = () => {
+            const scaleFactor = sizeSlider.value / 100;
+            console.log('Slider value:', sizeSlider.value, 'Scale factor:', scaleFactor);
             requestAnimationFrame(() => {
-                document.documentElement.style.setProperty('--grid-width', widthScale);
+                document.documentElement.style.setProperty('--scale-factor', scaleFactor);
             });
         };
-        sizeSlider.addEventListener('input', updateGridWidth);
-        sizeSlider.addEventListener('change', updateGridWidth);
+        sizeSlider.addEventListener('input', updateGridScale);
+        sizeSlider.addEventListener('change', updateGridScale);
     } else {
         console.error('sizeSlider element not found in DOM');
     }
