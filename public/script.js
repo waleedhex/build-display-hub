@@ -307,18 +307,21 @@ window.onload = () => {
 };
 
 function initializeSizeSlider() {
-    const sizeSlider = document.getElementById('sizeSlider');
-    if (sizeSlider && window.innerWidth >= 768) {
-        const grid = document.getElementById('hexGridHost');
-        const originalWidth = parseFloat(getComputedStyle(grid).width);
+    const sizeSlider = document.getElementBy-Id('sizeSlider');
+    if (sizeSlider) {
         sizeSlider.max = 100;
         sizeSlider.min = 40;
         sizeSlider.value = 100;
         document.documentElement.style.setProperty('--grid-width', 1);
         sizeSlider.addEventListener('input', () => {
             const widthScale = sizeSlider.value / 100;
-            document.documentElement.style.setProperty('--grid-width', widthScale);
+            console.log('Slider value:', sizeSlider.value, 'Width scale:', widthScale);
+            requestAnimationFrame(() => {
+                document.documentElement.style.setProperty('--grid-width', widthScale);
+            });
         });
+    } else {
+        console.error('sizeSlider element not found in DOM');
     }
 }
 
