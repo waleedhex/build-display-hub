@@ -56,7 +56,7 @@ body {
 }
 
 #hexGridHost {
-    width: calc(var(--grid-scale) * (7 * (90vw / 7) + 6 * (90vw / 200)));
+    width: calc(var(--grid-width) * (7 * (90vw / 7) + 6 * (90vw / 200)));
 }
 
 #hexGridContestant {
@@ -65,7 +65,7 @@ body {
 
 .row {
     display: flex;
-    gap: calc(var(--grid-scale) * (90vw / 100));
+    gap: calc(var(--grid-width) * (90vw / 100));
     justify-content: center;
 }
 
@@ -74,7 +74,7 @@ body {
 }
 
 .row:not(:first-child) {
-    margin-top: calc(-1 * var(--grid-scale) * (90vw / 35));
+    margin-top: calc(-1 * var(--grid-width) * (90vw / 35));
 }
 
 #hexGridContestant .row:not(:first-child) {
@@ -82,7 +82,7 @@ body {
 }
 
 .row:nth-child(even) {
-    margin-right: calc(var(--grid-scale) * 0.5 * (90vw / 7) + var(--grid-scale) * (90vw / 200));
+    margin-right: calc(var(--grid-width) * 0.5 * (90vw / 7) + var(--grid-width) * (90vw / 200));
 }
 
 #hexGridContestant .row:nth-child(even) {
@@ -90,7 +90,7 @@ body {
 }
 
 .row:nth-child(odd) {
-    margin-left: calc(var(--grid-scale) * 0.5 * (90vw / 7) + var(--grid-scale) * (90vw / 200));
+    margin-left: calc(var(--grid-width) * 0.5 * (90vw / 7) + var(--grid-width) * (90vw / 200));
 }
 
 #hexGridContestant .row:nth-child(odd) {
@@ -98,15 +98,15 @@ body {
 }
 
 .hexagon {
-    width: calc(var(--grid-scale) * (90vw / 7));
-    height: calc(var(--grid-scale) * (90vw / 7) * 1.15);
+    width: calc(var(--grid-width) * (90vw / 7));
+    height: calc(var(--grid-width) * (90vw / 7) * 1.15);
     min-width: 40px;
     min-height: 46px;
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: calc(var(--grid-scale) * (90vw / 28));
+    font-size: calc(var(--grid-width) * (90vw / 28));
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.3s;
@@ -188,7 +188,7 @@ body {
     gap: 1vw;
     margin: 1vw 0;
     align-items: center;
-    margin-bottom: calc(var(--grid-scale) * (90vw / 7) * 0.05);
+    margin-bottom: calc(var(--grid-width) * (90vw / 7) * 0.05);
 }
 
 #hexGridContestant ~ .icon-container {
@@ -306,7 +306,7 @@ button {
     flex-wrap: wrap;
     gap: 10px;
     justify-content: center;
-    margin-top: calc(var(--grid-scale) * (90vw / 7) * 0.05);
+    margin-top: calc(var(--grid-width) * (90vw / 7) * 0.05);
 }
 
 #hexGridContestant ~ .question-section {
@@ -329,7 +329,7 @@ button {
     justify-content: space-between;
     width: 80%;
     margin: 10px 0;
-    margin-top: calc(var(--grid-scale) * (90vw / 7) * 0.05);
+    margin-top: calc(var(--grid-width) * (90vw / 7) * 0.05);
 }
 
 #hexGridContestant ~ .players-container {
@@ -510,22 +510,26 @@ input:checked + .slider:before {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    padding: 15px;
+    padding: 20px;
     margin-bottom: 15px;
     width: 90%;
     max-width: 400px;
+    height: 150px;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .ad-title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
     color: #333;
     margin: 0 0 10px 0;
 }
 
 .ad-text {
-    font-size: 16px;
+    font-size: 14px;
     color: #333;
     margin: 0 0 10px 0;
     white-space: normal;
@@ -535,11 +539,11 @@ input:checked + .slider:before {
 .ad-button {
     background: #000;
     color: #fff;
-    padding: 8px 16px;
+    padding: 6px 12px;
     border-radius: 5px;
     text-decoration: none;
     display: inline-block;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .ad-button:hover {
@@ -685,8 +689,9 @@ input:checked + .slider:before {
         display: none;
     }
 
-    .hex-grid {
+    #hexGridHost, #hexGridContestant {
         width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
+        margin: 0 auto;
     }
 
     .hexagon {
@@ -711,6 +716,18 @@ input:checked + .slider:before {
 
     .row {
         gap: calc(95vw / 100);
+    }
+
+    .icon-container {
+        margin-bottom: 1vw;
+    }
+
+    .question-section {
+        margin-top: 10px;
+    }
+
+    .players-container {
+        margin-top: 10px;
     }
 
     .icon-btn {

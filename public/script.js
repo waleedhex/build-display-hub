@@ -308,16 +308,16 @@ window.onload = () => {
 
 function initializeSizeSlider() {
     const sizeSlider = document.getElementById('sizeSlider');
-    if (sizeSlider) {
+    if (sizeSlider && window.innerWidth >= 768) {
         const grid = document.getElementById('hexGridHost');
         const originalWidth = parseFloat(getComputedStyle(grid).width);
         sizeSlider.max = 100;
         sizeSlider.min = 40;
         sizeSlider.value = 100;
-        document.documentElement.style.setProperty('--grid-scale', 1);
+        document.documentElement.style.setProperty('--grid-width', 1);
         sizeSlider.addEventListener('input', () => {
-            const scale = sizeSlider.value / 100;
-            document.documentElement.style.setProperty('--grid-scale', scale);
+            const widthScale = sizeSlider.value / 100;
+            document.documentElement.style.setProperty('--grid-width', widthScale);
         });
     }
 }
