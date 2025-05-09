@@ -545,6 +545,8 @@ input:checked + .slider:before {
     border-radius: 5px;
     outline: none;
     margin: 10px 0;
+    user-select: auto;
+    pointer-events: auto;
 }
 
 .size-slider::-webkit-slider-thumb {
