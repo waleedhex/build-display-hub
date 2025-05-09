@@ -84,10 +84,20 @@ async function initDatabase() {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     expires_at TIMESTAMP NOT NULL
                 )
+            `),
+            db.query(`
+                CREATE TABLE IF NOT EXISTS advertisements (
+                    id SERIAL PRIMARY KEY,
+                    title TEXT,
+                    text TEXT,
+                    link TEXT,
+                    button_text TEXT,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
             `)
         ]);
 
-        // التحقق من الرموز الموجودة قبل تطبيق القيد
         const invalidCodes = await db.query(`
             SELECT code FROM subscribers
             WHERE NOT (
@@ -100,7 +110,6 @@ async function initDatabase() {
             console.warn('Invalid codes found:', invalidCodes.rows);
         }
 
-        // إضافة قيد التحقق للجداول القديمة
         await db.query(`
             ALTER TABLE subscribers
             ADD CONSTRAINT IF NOT EXISTS check_code_length_and_format
@@ -380,6 +389,13 @@ wss.on('connection', (ws) => {
     const clientId = uuidv4();
     ws.clientId = clientId;
 
+    // إرسال الإعلانات النشطة عند الاتصال الأولي
+    db.query('SELECT id, title, text, link, button_text FROM advertisements WHERE is_active = TRUE')
+        .then(result => {
+            ws.send(JSON.stringify({ type: 'activeAdvertisements', data: result.rows }));
+        })
+        .catch(err => console.error('Error fetching active advertisements:', err));
+
     ws.on('pong', () => {
         console.log('Received pong from client');
     });
@@ -437,7 +453,7 @@ wss.on('connection', (ws) => {
                             hexagons: {},
                             lettersOrder: ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'],
                             teams: { red: [], green: [] },
-                            buzzer: { active: false, player: '' },
+                            buzzer: { active: false, player: '', team: null },
                             buzzerLock: false,
                             colorSetIndex: 0,
                             isSwapped: false,
@@ -548,27 +564,30 @@ wss.on('connection', (ws) => {
             case 'buzzer':
                 if (ws.sessionId && !sessions.get(ws.sessionId).buzzer.active && !sessions.get(ws.sessionId).buzzerLock && clients.get(clientId)?.role === 'contestant') {
                     const session = sessions.get(ws.sessionId);
-                    session.buzzer = { active: true, player: data.player };
-                    session.buzzerLock = true;
-                    session.lastActivity = Date.now();
-                    await saveSession(ws.sessionId, session);
-                    broadcast(ws.sessionId, { type: 'buzzer', data: session.buzzer }, null);
-                    setTimeout(() => {
-                        broadcast(ws.sessionId, { type: 'timeUpWarning', data: { message: 'انتهى الوقت!' } }, null);
-                    }, 6000);
-                    setTimeout(() => {
-                        session.buzzer = { active: false, player: '' };
-                        session.buzzerLock = false;
-                        broadcast(ws.sessionId, { type: 'timeUp', data: {} }, null);
-                        saveSession(ws.sessionId, session);
-                    }, 7000);
+                    const team = session.teams.red.includes(data.player) ? 'red' : session.teams.green.includes(data.player) ? 'green' : null;
+                    if (team) {
+                        session.buzzer = { active: true, player: data.player, team };
+                        session.buzzerLock = true;
+                        session.lastActivity = Date.now();
+                        await saveSession(ws.sessionId, session);
+                        broadcast(ws.sessionId, { type: 'buzzer', data: session.buzzer }, null);
+                        setTimeout(() => {
+                            broadcast(ws.sessionId, { type: 'timeUpWarning', data: { message: 'انتهى الوقت!' } }, null);
+                        }, 6000);
+                        setTimeout(() => {
+                            session.buzzer = { active: false, player: '', team: null };
+                            session.buzzerLock = false;
+                            broadcast(ws.sessionId, { type: 'timeUp', data: {} }, null);
+                            saveSession(ws.sessionId, session);
+                        }, 7000);
+                    }
                 }
                 break;
 
             case 'resetBuzzer':
                 if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                     const session = sessions.get(ws.sessionId);
-                    session.buzzer = { active: false, player: '' };
+                    session.buzzer = { active: false, player: '', team: null };
                     session.buzzerLock = false;
                     session.lastActivity = Date.now();
                     await saveSession(ws.sessionId, session);
@@ -598,6 +617,46 @@ wss.on('connection', (ws) => {
                     session.lastActivity = Date.now();
                     await saveSession(ws.sessionId, session);
                     broadcast(ws.sessionId, { type: 'updateQuestions', data: session.questions.session }, null);
+                }
+                break;
+
+            case 'addAdvertisement':
+                const adminCheckAdAdd = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
+                if (adminCheckAdAdd.rows.length > 0) {
+                    const { title, text, link, button_text } = data;
+                    if (!title && !text && !link && !button_text) {
+                        ws.send(JSON.stringify({ type: 'adminError', data: 'يجب إدخال حقل واحد على الأقل' }));
+                    } else {
+                        const validLink = link && (link.startsWith('http://') || link.startsWith('https://')) ? link : null;
+                        const result = await db.query(
+                            'INSERT INTO advertisements (title, text, link, button_text, is_active) VALUES ($1, $2, $3, $4, TRUE) RETURNING id, title, text, link, button_text',
+                            [title || null, text || null, validLink, button_text || 'اضغط هنا']
+                        );
+                        ws.send(JSON.stringify({ type: 'advertisementAdded', data: 'تم إضافة الإعلان بنجاح' }));
+                        broadcast(ws.sessionId, { type: 'activeAdvertisements', data: await db.query('SELECT id, title, text, link, button_text FROM advertisements WHERE is_active = TRUE').then(res => res.rows) }, null);
+                    }
+                }
+                break;
+
+            case 'deleteAdvertisement':
+                const adminCheckAdDelete = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
+                if (adminCheckAdDelete.rows.length > 0) {
+                    const adId = data.id;
+                    const result = await db.query('DELETE FROM advertisements WHERE id = $1', [adId]);
+                    if (result.rowCount > 0) {
+                        ws.send(JSON.stringify({ type: 'advertisementDeleted', data: 'تم حذف الإعلان بنجاح' }));
+                        broadcast(ws.sessionId, { type: 'activeAdvertisements', data: await db.query('SELECT id, title, text, link, button_text FROM advertisements WHERE is_active = TRUE').then(res => res.rows) }, null);
+                    } else {
+                        ws.send(JSON.stringify({ type: 'adminError', data: 'الإعلان غير موجود' }));
+                    }
+                }
+                break;
+
+            case 'getAdvertisements':
+                const adminCheckAdGet = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
+                if (adminCheckAdGet.rows.length > 0) {
+                    const result = await db.query('SELECT id, title, text, link, button_text, is_active FROM advertisements');
+                    ws.send(JSON.stringify({ type: 'advertisements', data: result.rows }));
                 }
                 break;
 
