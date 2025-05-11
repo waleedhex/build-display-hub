@@ -23,7 +23,7 @@ body {
     width: 100%;
     box-sizing: border-box;
     position: relative;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .phone-screen, .welcome-screen, .host-screen, .contestant-screen {
@@ -483,18 +483,29 @@ input:checked + .slider:before {
 }
 
 #advertisementsContainer {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
+    width: 100%;
     max-width: 800px;
-    max-height: 200px;
-    overflow-y: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    z-index: 1000;
+    margin: 20px 0;
+}
+
+#advertisementsContainer.hidden {
+    display: none;
+}
+
+#advertisementsContainer::before {
+    content: "جاري تحميل الإعلانات...";
+    color: #fff;
+    font-size: 14px;
+    display: block;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+#advertisementsContainer:empty::before {
+    content: "لا توجد إعلانات حاليًا";
 }
 
 .advertisement-card {
@@ -502,16 +513,18 @@ input:checked + .slider:before {
     border-radius: 20px;
     border: 1px solid #ddd;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-    padding: 20px;
+    padding: 15px;
     margin-bottom: 15px;
-    width: 90%;
-    max-width: 600px;
-    height: 100px;
+    width: 600px;
+    max-width: 90%;
+    height: auto;
+    min-height: 80px;
     text-align: center;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin: 0 auto;
+    position: relative;
 }
 
 .advertisement-card:hover {
@@ -546,6 +559,34 @@ input:checked + .slider:before {
 
 .ad-button:hover {
     background: #333;
+}
+
+.ad-close-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: transparent;
+    border: none;
+    color: #333;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.ad-close-btn:hover {
+    color: #dc3545;
+}
+
+.close-ads-btn {
+    background-color: #dc3545;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.close-ads-btn:hover {
+    background-color: #c82333;
 }
 
 .sliders-container {
@@ -716,4 +757,113 @@ input:checked + .slider:before {
     }
 
     .question-section {
-        margin
+        margin-top: 10px;
+    }
+
+    .players-container {
+        margin-top: 10px;
+    }
+
+    .icon-btn {
+        width: 8vw;
+        height: 8vw;
+        font-size: 3vw;
+    }
+
+    .party-btn {
+        font-size: 3.5vw;
+    }
+
+    .party-text {
+        font-size: 18vw;
+        -webkit-text-stroke: 1.5px #000000;
+    }
+
+    .buzzer-btn {
+        width: 160px;
+        height: 160px;
+        font-size: 18px;
+    }
+
+    .players-container {
+        flex-direction: column;
+        width: 90%;
+        align-items: center;
+    }
+
+    .team-list {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .question-section {
+        width: 90%;
+        flex-direction: column;
+    }
+
+    .questions-container {
+        width: 90%;
+        max-height: 150px;
+    }
+
+    .toggle-switch {
+        width: 30px;
+        height: 15px;
+    }
+
+    .slider:before {
+        height: 11px;
+        width: 11px;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(15px);
+    }
+
+    .toggle-label {
+        font-size: 12px;
+    }
+
+    .connection-lost {
+        width: 180px;
+        padding: 15px;
+    }
+
+    .spinner {
+        width: 30px;
+        height: 30px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+    }
+
+    .connection-lost p {
+        font-size: 14px;
+    }
+
+    .connection-lost button {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+
+    .advertisement-card {
+        width: 100%;
+        max-width: 90%;
+    }
+
+    .ad-title {
+        font-size: 12px;
+    }
+
+    .ad-text {
+        font-size: 10px;
+    }
+
+    .ad-button {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+
+    .ad-close-btn {
+        font-size: 14px;
+    }
+}

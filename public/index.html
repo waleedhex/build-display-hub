@@ -14,7 +14,6 @@
             <input type="text" id="phoneNumber" placeholder="مثال: X7K9P2">
             <button id="submitPhoneButton">تأكيد</button>
             <p id="phoneError" class="error-message"></p>
-            <div id="advertisementsContainer"></div>
         </div>
 
         <div class="welcome-screen" id="welcomeScreen">
@@ -127,6 +126,7 @@
             <div class="sliders-container">
                 <label for="sizeSlider" style="color: #fff; font-size: 14px;">حجم اللوحة</label>
                 <input type="range" id="sizeSlider" class="size-slider" min="40" max="100" value="100">
+                <p style="color: #fff; font-size: 12px; margin-top: 5px;">ملاحظة: تغيير حجم النافذة سيعيد اللوحة إلى الحجم الطبيعي</p>
             </div>
             <p id="buzzerInfo" class="buzzer-info"></p>
             <div class="question-section">
@@ -160,6 +160,10 @@
             <button id="buzzerButton" class="buzzer-btn"><i class="fas fa-bell"></i></button>
             <div id="teamInfo" style="margin-top: 10px; color: #fff;"></div>
         </div>
+
+        <div id="advertisementsContainer">
+            <button class="close-ads-btn" onclick="document.getElementById('advertisementsContainer').classList.add('hidden')">إخفاء الإعلانات</button>
+        </div>
     </div>
 
     <audio id="buzzerSound" src="/school-bell.mp3" preload="auto"></audio>
@@ -167,5 +171,5 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="script.js"></script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93e313325d69b0bb',t:'MTc0Njk4MTE3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
