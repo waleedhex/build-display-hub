@@ -146,6 +146,7 @@ function handleMessages(event) {
             updateCodesCount();
             fetchAdvertisements();
         }
+        fetchAdvertisements();
     } else if (type === 'codeError') {
         document.getElementById('phoneError').innerText = data;
         document.getElementById('phoneError').className = 'error-message';
@@ -161,6 +162,7 @@ function handleMessages(event) {
         updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
         updateTeams(data.teams);
         updateBuzzer(data.buzzer);
+        fetchAdvertisements();
     } else if (type === 'codesGenerated') {
         const generatedCodesDiv = document.getElementById('generatedCodes');
         generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
@@ -301,7 +303,17 @@ window.onload = () => {
     const timeUpAudio = document.getElementById('timeUpSound');
     timeUpAudio.load();
     connectWebSocket();
+    window.addEventListener('resize', handleResize);
 };
+
+function handleResize() {
+    const sizeSlider = document.getElementById('sizeSlider');
+    if (sizeSlider) {
+        sizeSlider.value = 100;
+        const scaleFactor = sizeSlider.value / 100;
+        document.documentElement.style.setProperty('--scale-factor', scaleFactor);
+    }
+}
 
 function initializeSizeSlider() {
     const sizeSlider = document.getElementById('sizeSlider');

@@ -61,12 +61,16 @@ body {
 
 #hexGridHost {
     width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+    max-width: 900px;
+    min-width: 600px;
     transform: scale(var(--scale-factor, 1));
     transform-origin: center center;
 }
 
 #hexGridContestant {
     width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+    max-width: 900px;
+    min-width: 600px;
 }
 
 .row {
@@ -478,19 +482,41 @@ input:checked + .slider:before {
     background-color: #c82333;
 }
 
+#advertisementsContainer {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 800px;
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1000;
+}
+
 .advertisement-card {
     background: rgba(255, 255, 255, 0.9);
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    padding: 15px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    padding: 20px;
     margin-bottom: 15px;
     width: 90%;
-    max-width: 400px;
+    max-width: 600px;
     height: 100px;
     text-align: center;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.advertisement-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
 
 .ad-title {
@@ -520,15 +546,6 @@ input:checked + .slider:before {
 
 .ad-button:hover {
     background: #333;
-}
-
-#advertisementsContainer {
-    margin-top: 20px;
-    max-height: 200px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
 }
 
 .sliders-container {
@@ -666,7 +683,8 @@ input:checked + .slider:before {
 
     #hexGridHost, #hexGridContestant {
         width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
-        margin: 0 auto;
+        max-width: 600px;
+        min-width: 300px;
     }
 
     .hexagon {
@@ -698,91 +716,4 @@ input:checked + .slider:before {
     }
 
     .question-section {
-        margin-top: 10px;
-    }
-
-    .players-container {
-        margin-top: 10px;
-    }
-
-    .icon-btn {
-        width: 8vw;
-        height: 8vw;
-        font-size: 3vw;
-    }
-
-    .party-btn {
-        font-size: 3.5vw;
-    }
-
-    .party-text {
-        font-size: 18vw;
-        -webkit-text-stroke: 1.5px #000000;
-    }
-
-    .buzzer-btn {
-        width: 160px;
-        height: 160px;
-        font-size: 18px;
-    }
-
-    .players-container {
-        flex-direction: column;
-        width: 90%;
-        align-items: center;
-    }
-
-    .team-list {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-
-    .question-section {
-        width: 90%;
-        flex-direction: column;
-    }
-
-    .questions-container {
-        width: 90%;
-        max-height: 150px;
-    }
-
-    .toggle-switch {
-        width: 30px;
-        height: 15px;
-    }
-
-    .slider:before {
-        height: 11px;
-        width: 11px;
-    }
-
-    input:checked + .slider:before {
-        transform: translateX(15px);
-    }
-
-    .toggle-label {
-        font-size: 12px;
-    }
-
-    .connection-lost {
-        width: 180px;
-        padding: 15px;
-    }
-
-    .spinner {
-        width: 30px;
-        height: 30px;
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #3498db;
-    }
-
-    .connection-lost p {
-        font-size: 14px;
-    }
-
-    .connection-lost button {
-        padding: 6px 12px;
-        font-size: 14px;
-    }
-}
+        margin
