@@ -495,19 +495,6 @@ input:checked + .slider:before {
     display: none;
 }
 
-#advertisementsContainer::before {
-    content: "جاري تحميل الإعلانات...";
-    color: #fff;
-    font-size: 14px;
-    display: block;
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-#advertisementsContainer:empty::before {
-    content: "لا توجد إعلانات حاليًا";
-}
-
 .advertisement-card {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 20px;
@@ -574,19 +561,6 @@ input:checked + .slider:before {
 
 .ad-close-btn:hover {
     color: #dc3545;
-}
-
-.close-ads-btn {
-    background-color: #dc3545;
-    color: #fff;
-    padding: 8px 16px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-bottom: 10px;
-}
-
-.close-ads-btn:hover {
-    background-color: #c82333;
 }
 
 .sliders-container {
