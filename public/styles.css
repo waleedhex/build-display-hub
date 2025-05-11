@@ -60,7 +60,7 @@ body {
 }
 
 #hexGridHost {
-    width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+    width: calc(7 * (90vh / 7) + 6 * (90vh / 200));
     max-width: 900px;
     min-width: 600px;
     transform: scale(var(--scale-factor, 1));
@@ -68,7 +68,7 @@ body {
 }
 
 #hexGridContestant {
-    width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+    width: calc(7 * (90vh / 7) + 6 * (90vh / 200));
     max-width: 900px;
     min-width: 600px;
     padding: 10px;
@@ -77,32 +77,45 @@ body {
 }
 
 #hexGridDisplay {
-    width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+    width: calc(7 * (90vh / 7) + 6 * (90vh / 200));
     max-width: 900px;
     min-width: 600px;
     padding: 10px;
     box-sizing: border-box;
-    margin-bottom: 40px; /* مسافة ثابتة أسفل اللوحة */
+    margin-bottom: 40px;
 }
 
 .row {
     display: flex;
     justify-content: center;
     flex-shrink: 0;
+    gap: calc(90vh / 100);
+}
+
+.row:not(:first-child) {
+    margin-top: calc(-90vh / 35);
+}
+
+.row:nth-child(even) {
+    margin-right: calc(0.5 * (90vh / 7) + (90vh / 200));
+}
+
+.row:nth-child(odd) {
+    margin-left: calc(0.5 * (90vh / 7) + (90vh / 200));
 }
 
 .hexagon {
-    width: calc(90vw / 7);
-    height: calc(1.15 * (90vw / 7));
+    width: calc(90vh / 7);
+    height: calc(1.15 * (90vh / 7));
     min-width: 40px;
     min-height: 46px;
-    max-width: 128px; /* تحديد الحد الأقصى لمنع التوسع الزائد */
+    max-width: 128px;
     max-height: 148px;
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: calc(90vw / 28);
+    font-size: calc(90vh / 28);
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.3s;
@@ -534,14 +547,14 @@ input:checked + .slider:before {
 }
 
 .ad-title {
-    font-size: 16px; /* زيادة حجم الخط */
+    font-size: 16px;
     font-weight: bold;
     color: #333;
     margin: 0 0 8px 0;
 }
 
 .ad-text {
-    font-size: 14px; /* زيادة حجم الخط */
+    font-size: 14px;
     color: #333;
     margin: 0 0 8px 0;
     white-space: normal;
@@ -555,7 +568,7 @@ input:checked + .slider:before {
     border-radius: 5px;
     text-decoration: none;
     display: inline-block;
-    font-size: 14px; /* زيادة حجم الخط */
+    font-size: 14px;
 }
 
 .ad-button:hover {
@@ -785,65 +798,65 @@ input:checked + .slider:before {
 /* أنماط لضبط لوحة الحروف في وضع لاندسكيب وبورتريه */
 @media (orientation: landscape) {
     #hexGridHost, #hexGridContestant, #hexGridDisplay {
-        width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+        width: calc(7 * (90vh / 7) + 6 * (90vh / 200));
         max-width: 900px;
         min-width: 600px;
     }
 
     .hexagon {
-        width: calc(90vw / 7);
-        height: calc(1.15 * (90vw / 7));
-        font-size: calc(90vw / 28);
+        width: calc(90vh / 7);
+        height: calc(1.15 * (90vh / 7));
+        font-size: calc(90vh / 28);
         max-width: 128px;
         max-height: 148px;
     }
 
     .row:not(:first-child) {
-        margin-top: calc(-90vw / 35);
+        margin-top: calc(-90vh / 35);
     }
 
     .row:nth-child(even) {
-        margin-right: calc(0.5 * (90vw / 7) + (90vw / 200));
+        margin-right: calc(0.5 * (90vh / 7) + (90vh / 200));
     }
 
     .row:nth-child(odd) {
-        margin-left: calc(0.5 * (90vw / 7) + (90vw / 200));
+        margin-left: calc(0.5 * (90vh / 7) + (90vh / 200));
     }
 
     .row {
-        gap: calc(90vw / 100);
+        gap: calc(90vh / 100);
     }
 }
 
 @media (orientation: portrait) {
     #hexGridHost, #hexGridContestant, #hexGridDisplay {
-        width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
+        width: calc(7 * (95vh / 7) + 6 * (95vh / 200));
         max-width: 600px;
         min-width: 300px;
     }
 
     .hexagon {
-        width: calc(95vw / 7);
-        height: calc(1.15 * (95vw / 7));
-        font-size: calc(95vw / 28);
+        width: calc(95vh / 7);
+        height: calc(1.15 * (95vh / 7));
+        font-size: calc(95vh / 28);
         max-width: 100px;
         max-height: 115px;
     }
 
     .row:not(:first-child) {
-        margin-top: calc(-95vw / 35);
+        margin-top: calc(-95vh / 35);
     }
 
     .row:nth-child(even) {
-        margin-right: calc(0.5 * (95vw / 7) + (95vw / 200));
+        margin-right: calc(0.5 * (95vh / 7) + (95vh / 200));
     }
 
     .row:nth-child(odd) {
-        margin-left: calc(0.5 * (95vw / 7) + (95vw / 200));
+        margin-left: calc(0.5 * (95vh / 7) + (95vh / 200));
     }
 
     .row {
-        gap: calc(95vw / 100);
+        gap: calc(95vh / 100);
     }
 }
 
@@ -853,35 +866,35 @@ input:checked + .slider:before {
     }
 
     #hexGridHost, #hexGridContestant, #hexGridDisplay {
-        width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
+        width: calc(7 * (95vh / 7) + 6 * (95vh / 200));
         max-width: 600px;
         min-width: 300px;
     }
 
     .hexagon {
-        width: calc(95vw / 7);
-        height: calc(1.15 * (95vw / 7));
+        width: calc(95vh / 7);
+        height: calc(1.15 * (95vh / 7));
         min-width: 30px;
         min-height: 34.5px;
-        font-size: calc(95vw / 28);
+        font-size: calc(95vh / 28);
         max-width: 100px;
         max-height: 115px;
     }
 
     .row:not(:first-child) {
-        margin-top: calc(-95vw / 35);
+        margin-top: calc(-95vh / 35);
     }
 
     .row:nth-child(even) {
-        margin-right: calc(0.5 * (95vw / 7) + (95vw / 200));
+        margin-right: calc(0.5 * (95vh / 7) + (95vh / 200));
     }
 
     .row:nth-child(odd) {
-        margin-left: calc(0.5 * (95vw / 7) + (95vw / 200));
+        margin-left: calc(0.5 * (95vh / 7) + (95vh / 200));
     }
 
     .row {
-        gap: calc(95vw / 100);
+        gap: calc(95vh / 100);
     }
 
     .icon-container {
