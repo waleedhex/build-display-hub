@@ -71,9 +71,6 @@ body {
     width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
     max-width: 900px;
     min-width: 600px;
-    padding: 10px;
-    box-sizing: border-box;
-    margin-bottom: 30px;
 }
 
 #hexGridDisplay {
@@ -90,7 +87,6 @@ body {
     display: flex;
     gap: calc(90vw / 100);
     justify-content: center;
-    flex-shrink: 0;
 }
 
 #hexGridHost .row:not(:first-child), #hexGridContestant .row:not(:first-child) {
@@ -131,8 +127,6 @@ body {
     height: calc(1.15 * (90vw / 7));
     min-width: 40px;
     min-height: 46px;
-    max-width: 128px;
-    max-height: 148px;
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     display: flex;
     justify-content: center;
@@ -1131,15 +1125,15 @@ input:checked + .slider:before {
     }
 
     .ad-title {
-        font-size: 14px;
+        font-size: 12px;
     }
 
     .ad-text {
-        font-size: 12px;
+        font-size: 10px;
     }
 
     .ad-button {
-        font-size: 12px;
+        font-size: 10px;
         padding: 4px 8px;
     }
 
