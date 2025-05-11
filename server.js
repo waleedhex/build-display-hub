@@ -380,6 +380,10 @@ async function handleClientDisconnect(client) {
                 broadcast(client.sessionId, { type: 'updateTeams', data: session.teams }, null);
             }
         }, 30000);
+    } else if (client.role === 'display' && session) {
+        // إعادة تعيين حالة جهاز العرض عند الانقطاع
+        session.displayConnected = false;
+        await saveSession(client.sessionId, session);
     }
     clients.delete(client.clientId);
 }
@@ -414,14 +418,24 @@ wss.on('connection', (ws) => {
                     const session = sessions.get(ws.sessionId) || await loadSession(ws.sessionId);
                     if (session) {
                         const client = { ws, role, name: ws.playerName, sessionId: ws.sessionId, clientId };
-                        clients.set(clientId, client);
-                        if (role === 'host') {
+                        if (role === 'display') {
+                            // التحقق من عدد الأجهزة المتصلة بدور display
+                            if (session.displayConnected) {
+                                // تجاهل الاتصال الجديد دون إرسال رد
+                                return;
+                            }
+                            session.displayConnected = true;
+                            await saveSession(ws.sessionId, session);
+                            clients.set(clientId, client);
+                            ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {} } }));
+                        } else if (role === 'host') {
                             const existingHost = Array.from(clients.values()).find(c => c.sessionId === ws.sessionId && c.role === 'host');
                             if (existingHost) {
                                 ws.send(JSON.stringify({ type: 'joinError', data: 'يوجد مضيف بالفعل في هذه الجلسة!' }));
                                 clients.delete(clientId);
                                 return;
                             }
+                            clients.set(clientId, client);
                             ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: session.questions } }));
                         } else {
                             if (!session.teams.red.includes(ws.playerName) && !session.teams.green.includes(ws.playerName)) {
@@ -431,6 +445,7 @@ wss.on('connection', (ws) => {
                                 session.teams[team].push(ws.playerName);
                                 await saveSession(ws.sessionId, session);
                             }
+                            clients.set(clientId, client);
                             ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {} } }));
                             broadcast(ws.sessionId, { type: 'updateTeams', data: session.teams }, null);
                         }
@@ -459,7 +474,8 @@ wss.on('connection', (ws) => {
                             isSwapped: false,
                             partyMode: false,
                             questions: { general: await loadQuestions(null, true), session: await loadQuestions(ws.sessionId, false) },
-                            lastActivity: Date.now()
+                            lastActivity: Date.now(),
+                            displayConnected: false // متغير جديد لتتبع جهاز العرض
                         };
                         sessions.set(ws.sessionId, session);
                         await saveSession(ws.sessionId, session);
@@ -503,6 +519,15 @@ wss.on('connection', (ws) => {
                     await saveSession(ws.sessionId, session);
                 } else {
                     ws.send(JSON.stringify({ type: 'error', data: 'يرجى التحقق من الرمز أولاً' }));
+                }
+                break;
+
+            case 'generateDisplayLink':
+                if (ws.sessionId && clients.get(clientId)?.role === 'host') {
+                    const session = sessions.get(ws.sessionId);
+                    const token = await generateToken(ws.sessionId, 'display', 'display');
+                    const displayUrl = `https://hroof-198afbda9986.herokuapp.com/display.html?sessionId=${ws.sessionId}&token=${token}`;
+                    ws.send(JSON.stringify({ type: 'displayLink', data: { url: displayUrl } }));
                 }
                 break;
 

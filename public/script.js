@@ -67,7 +67,7 @@ function connectWebSocket() {
         };
         ws.onmessage = handleMessages;
         ws.onpong = () => {
-            console.log('Received pong from server');
+            console.log('Received pong from client');
         };
     } catch (error) {
         console.error('Failed to initialize WebSocket:', error);
@@ -242,6 +242,22 @@ function handleMessages(event) {
     } else if (type === 'advertisementDeleted') {
         showToast(data, 'success');
         fetchAdvertisements();
+    } else if (type === 'displayLink') {
+        // معالجة الرابط الخاص بصفحة العرض
+        const modal = document.getElementById('shareModal');
+        const shareLink = document.getElementById('shareLink');
+        const qrCodeDiv = document.getElementById('qrCode');
+        shareLink.value = data.url;
+        qrCodeDiv.innerHTML = ''; // تنظيف QR كود سابق إن وجد
+        new QRCode(qrCodeDiv, {
+            text: data.url,
+            width: 150,
+            height: 150,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+        modal.style.display = 'flex';
     } else if (type === 'updateHexagon') {
         const hex = document.querySelector(`#${isHost ? 'hexGridHost' : 'hexGridContestant'} .changeable[data-letter="${data.letter}"]`);
         if (hex) {
@@ -308,6 +324,7 @@ window.onload = () => {
     timeUpAudio.load();
     connectWebSocket();
     window.addEventListener('resize', handleResize);
+    initializeShareModal();
 };
 
 function handleResize() {
@@ -338,6 +355,49 @@ function initializeSizeSlider() {
     } else {
         console.error('sizeSlider element not found in DOM');
     }
+}
+
+// تهيئة النافذة العائمة للمشاركة
+function initializeShareModal() {
+    const shareButton = document.getElementById('shareButton');
+    const closeModal = document.getElementById('closeModal');
+    const copyLinkButton = document.getElementById('copyLinkButton');
+    const modal = document.getElementById('shareModal');
+
+    if (shareButton) {
+        shareButton.addEventListener('click', () => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'generateDisplayLink', data: { phoneNumber } }));
+            } else {
+                showToast('لا يوجد اتصال بالخادم!', 'error');
+            }
+        });
+    }
+
+    if (closeModal) {
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+
+    if (copyLinkButton) {
+        copyLinkButton.addEventListener('click', () => {
+            const shareLink = document.getElementById('shareLink');
+            navigator.clipboard.writeText(shareLink.value).then(() => {
+                showToast('تم نسخ الرابط بنجاح!', 'success');
+            }).catch(err => {
+                console.error('فشل نسخ الرابط:', err);
+                showToast('فشل نسخ الرابط!', 'error');
+            });
+        });
+    }
+
+    // إغلاق النافذة عند النقر خارجها
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
 }
 
 document.getElementById('submitPhoneButton').addEventListener('click', () => {

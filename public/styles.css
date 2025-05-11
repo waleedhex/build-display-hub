@@ -42,7 +42,7 @@ body {
     justify-content: center;
 }
 
-.host-screen.active, .contestant-screen.active {
+.host-screen.active, .contestant-screen.active, .display-screen.active {
     display: flex;
 }
 
@@ -73,10 +73,20 @@ body {
     min-width: 600px;
 }
 
+#hexGridDisplay {
+    width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+    max-width: 90%; /* لضمان عدم التجاوز */
+    min-width: 600px;
+    padding: 10px; /* مسافة حول اللوحة لمنع الالتصاق بالأطراف */
+    box-sizing: border-box;
+    overflow: hidden; /* لمنع التجاوز */
+}
+
 .row {
     display: flex;
     gap: calc(90vw / 100);
     justify-content: center;
+    flex-shrink: 0; /* لمنع تصغير الصفوف */
 }
 
 .row:not(:first-child) {
@@ -92,15 +102,15 @@ body {
 }
 
 .hexagon {
-    width: calc(90vw / 7);
-    height: calc(1.15 * (90vw / 7));
+    width: clamp(40px, calc(90vw / 7), 120px); /* ضبط حجم الخلية */
+    height: clamp(46px, calc(1.15 * (90vw / 7)), 138px); /* ضبط الارتفاع بناءً على العرض */
     min-width: 40px;
     min-height: 46px;
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: calc(90vw / 28);
+    font-size: clamp(14px, calc(90vw / 28), 30px); /* ضبط حجم الخط */
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.3s;
@@ -109,8 +119,8 @@ body {
     background-color: #ffffe0;
 }
 
-.hexagon.contestant-hex {
-    cursor: default;
+.hexagon.contestant-hex, .hexagon.display-hex {
+    cursor: default; /* لا تفاعل في صفحة العرض */
 }
 
 .hexagon::before {
@@ -298,10 +308,11 @@ button {
     min-width: 120px;
 }
 
-.buzzer-info {
+.buzzer-info, .buzzer-info-display {
     color: #fff;
     font-size: 18px;
     margin: 10px 0;
+    text-align: center;
 }
 
 .players-container {
@@ -691,23 +702,161 @@ input:checked + .slider:before {
     opacity: 1;
 }
 
+/* أنماط النافذة العائمة للمشاركة */
+.share-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.share-modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    position: relative;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    color: #333;
+}
+
+.share-modal-content p {
+    margin: 0 0 15px;
+    font-size: 16px;
+}
+
+#qrCode {
+    margin: 0 auto 15px;
+    width: 150px;
+    height: 150px;
+}
+
+.share-link-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+#shareLink {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    background: #f5f5f5;
+}
+
+#copyLinkButton {
+    background: #007bff;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+#copyLinkButton:hover {
+    background: #0056b3;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+}
+
+.modal-close:hover {
+    color: #dc3545;
+}
+
+/* أنماط لضبط لوحة الحروف في وضع لاندسكيب وبورتريه */
+@media (orientation: landscape) {
+    #hexGridDisplay {
+        width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
+        max-width: 90%;
+        min-width: 600px;
+    }
+
+    .hexagon {
+        width: clamp(40px, calc(90vw / 7), 120px);
+        height: clamp(46px, calc(1.15 * (90vw / 7)), 138px);
+        font-size: clamp(14px, calc(90vw / 28), 30px);
+    }
+
+    .row:not(:first-child) {
+        margin-top: calc(-90vw / 35);
+    }
+
+    .row:nth-child(even) {
+        margin-right: calc(0.5 * (90vw / 7) + (90vw / 200));
+    }
+
+    .row:nth-child(odd) {
+        margin-left: calc(0.5 * (90vw / 7) + (90vw / 200));
+    }
+
+    .row {
+        gap: calc(90vw / 100);
+    }
+}
+
+@media (orientation: portrait) {
+    #hexGridDisplay {
+        width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
+        max-width: 90%;
+        min-width: 300px;
+    }
+
+    .hexagon {
+        width: clamp(30px, calc(95vw / 7), 100px);
+        height: clamp(34.5px, calc(1.15 * (95vw / 7)), 115px);
+        font-size: clamp(12px, calc(95vw / 28), 24px);
+    }
+
+    .row:not(:first-child) {
+        margin-top: calc(-95vw / 35);
+    }
+
+    .row:nth-child(even) {
+        margin-right: calc(0.5 * (95vw / 7) + (95vw / 200));
+    }
+
+    .row:nth-child(odd) {
+        margin-left: calc(0.5 * (95vw / 7) + (95vw / 200));
+    }
+
+    .row {
+        gap: calc(95vw / 100);
+    }
+}
+
 @media (max-width: 767px) {
     .sliders-container {
         display: none;
     }
 
-    #hexGridHost, #hexGridContestant {
+    #hexGridHost, #hexGridContestant, #hexGridDisplay {
         width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
         max-width: 600px;
         min-width: 300px;
     }
 
     .hexagon {
-        width: calc(95vw / 7);
-        height: calc(1.15 * (95vw / 7));
+        width: clamp(30px, calc(95vw / 7), 100px);
+        height: clamp(34.5px, calc(1.15 * (95vw / 7)), 115px);
         min-width: 30px;
         min-height: 34.5px;
-        font-size: calc(95vw / 28);
+        font-size: clamp(12px, calc(95vw / 28), 24px);
     }
 
     .row:not(:first-child) {
