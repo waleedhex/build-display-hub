@@ -26,7 +26,7 @@ body {
     overflow: auto;
 }
 
-.phone-screen, .welcome-screen, .host-screen, .contestant-screen {
+.phone-screen, .welcome-screen, .host-screen, .contestant-screen, .display-screen {
     display: none;
     flex-direction: column;
     align-items: center;
@@ -67,19 +67,13 @@ body {
     transform-origin: center center;
 }
 
-#hexGridContestant {
+#hexGridContestant, #hexGridDisplay {
     width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
     max-width: 900px;
     min-width: 600px;
-}
-
-#hexGridDisplay {
-    width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
-    max-width: 90%; /* لضمان عدم التجاوز */
-    min-width: 600px;
-    padding: 10px; /* مسافة حول اللوحة لمنع الالتصاق بالأطراف */
+    padding: 10px; /* مسافة حول اللوحة */
     box-sizing: border-box;
-    overflow: hidden; /* لمنع التجاوز */
+    margin-bottom: 30px; /* مسافة ثابتة أسفل اللوحة لنص الضغطات */
 }
 
 .row {
@@ -102,15 +96,17 @@ body {
 }
 
 .hexagon {
-    width: clamp(40px, calc(90vw / 7), 120px); /* ضبط حجم الخلية */
-    height: clamp(46px, calc(1.15 * (90vw / 7)), 138px); /* ضبط الارتفاع بناءً على العرض */
+    width: calc(90vw / 7);
+    height: calc(1.15 * (90vw / 7));
     min-width: 40px;
     min-height: 46px;
+    max-width: 120px; /* الحد الأقصى للخلية */
+    max-height: 138px;
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: clamp(14px, calc(90vw / 28), 30px); /* ضبط حجم الخط */
+    font-size: calc(90vw / 28);
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.3s;
@@ -781,16 +777,16 @@ input:checked + .slider:before {
 
 /* أنماط لضبط لوحة الحروف في وضع لاندسكيب وبورتريه */
 @media (orientation: landscape) {
-    #hexGridDisplay {
+    #hexGridHost, #hexGridContestant, #hexGridDisplay {
         width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
-        max-width: 90%;
+        max-width: 900px;
         min-width: 600px;
     }
 
     .hexagon {
-        width: clamp(40px, calc(90vw / 7), 120px);
-        height: clamp(46px, calc(1.15 * (90vw / 7)), 138px);
-        font-size: clamp(14px, calc(90vw / 28), 30px);
+        width: calc(90vw / 7);
+        height: calc(1.15 * (90vw / 7));
+        font-size: calc(90vw / 28);
     }
 
     .row:not(:first-child) {
@@ -811,16 +807,16 @@ input:checked + .slider:before {
 }
 
 @media (orientation: portrait) {
-    #hexGridDisplay {
+    #hexGridHost, #hexGridContestant, #hexGridDisplay {
         width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
-        max-width: 90%;
+        max-width: 600px;
         min-width: 300px;
     }
 
     .hexagon {
-        width: clamp(30px, calc(95vw / 7), 100px);
-        height: clamp(34.5px, calc(1.15 * (95vw / 7)), 115px);
-        font-size: clamp(12px, calc(95vw / 28), 24px);
+        width: calc(95vw / 7);
+        height: calc(1.15 * (95vw / 7));
+        font-size: calc(95vw / 28);
     }
 
     .row:not(:first-child) {
@@ -852,11 +848,11 @@ input:checked + .slider:before {
     }
 
     .hexagon {
-        width: clamp(30px, calc(95vw / 7), 100px);
-        height: clamp(34.5px, calc(1.15 * (95vw / 7)), 115px);
+        width: calc(95vw / 7);
+        height: calc(1.15 * (95vw / 7));
         min-width: 30px;
         min-height: 34.5px;
-        font-size: clamp(12px, calc(95vw / 28), 24px);
+        font-size: calc(95vw / 28);
     }
 
     .row:not(:first-child) {
