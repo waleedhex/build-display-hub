@@ -26,7 +26,7 @@ body {
     overflow: auto;
 }
 
-.phone-screen, .welcome-screen, .host-screen, .contestant-screen, .display-screen {
+.phone-screen, .welcome-screen, .host-screen, .contestant-screen {
     display: none;
     flex-direction: column;
     align-items: center;
@@ -42,7 +42,7 @@ body {
     justify-content: center;
 }
 
-.host-screen.active, .contestant-screen.active, .display-screen.active {
+.host-screen.active, .contestant-screen.active {
     display: flex;
 }
 
@@ -71,55 +71,24 @@ body {
     width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
     max-width: 900px;
     min-width: 600px;
-    padding: 10px;
-    box-sizing: border-box;
-    margin-bottom: 30px;
-}
-
-#hexGridDisplay {
-    width: calc(7 * (90vh / 7) + 6 * (90vh / 200)); /* تعتمد على الارتفاع */
-    max-width: 900px;
-    min-width: 600px;
-    padding: 10px;
-    box-sizing: border-box;
-    margin-bottom: 10px;
-    transform: scale(var(--scale-factor, 1));
-    transform-origin: center center;
 }
 
 .row {
     display: flex;
     gap: calc(90vw / 100);
     justify-content: center;
-    flex-shrink: 0;
-}
-
-#hexGridDisplay .row {
-    gap: calc(90vh / 100); /* تعتمد على الارتفاع */
 }
 
 .row:not(:first-child) {
     margin-top: calc(-90vw / 35);
 }
 
-#hexGridDisplay .row:not(:first-child) {
-    margin-top: calc(-90vh / 35); /* تعتمد على الارتفاع */
-}
-
 .row:nth-child(even) {
     margin-right: calc(0.5 * (90vw / 7) + (90vw / 200));
 }
 
-#hexGridDisplay .row:nth-child(even) {
-    margin-right: calc(0.5 * (90vh / 7) + (90vh / 200)); /* تعتمد على الارتفاع */
-}
-
 .row:nth-child(odd) {
     margin-left: calc(0.5 * (90vw / 7) + (90vw / 200));
-}
-
-#hexGridDisplay .row:nth-child(odd) {
-    margin-left: calc(0.5 * (90vh / 7) + (90vh / 200)); /* تعتمد على الارتفاع */
 }
 
 .hexagon {
@@ -127,8 +96,6 @@ body {
     height: calc(1.15 * (90vw / 7));
     min-width: 40px;
     min-height: 46px;
-    max-width: 120px;
-    max-height: 138px;
     clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
     display: flex;
     justify-content: center;
@@ -142,13 +109,7 @@ body {
     background-color: #ffffe0;
 }
 
-#hexGridDisplay .hexagon {
-    width: calc(90vh / 7); /* تعتمد على الارتفاع */
-    height: calc(1.15 * (90vh / 7)); /* تعتمد على الارتفاع */
-    font-size: calc(90vh / 28); /* تعتمد على الارتفاع */
-}
-
-.hexagon.contestant-hex, .hexagon.display-hex {
+.hexagon.contestant-hex {
     cursor: default;
 }
 
@@ -336,19 +297,11 @@ button {
     flex: 1;
     min-width: 120px;
 }
+
 .buzzer-info {
     color: #fff;
     font-size: 18px;
     margin: 10px 0;
-    text-align: center;
-}
-
-.buzzer-info-display {
-    color: #fff;
-    font-size: 24px;
-    margin: 5px 0 30px 0; /* تقليل margin-top لمنع تحرك اللوحة، الإبقاء على margin-bottom للرفع عن الحافة */
-    text-align: center;
-}
 }
 
 .players-container {
@@ -567,14 +520,14 @@ input:checked + .slider:before {
 }
 
 .ad-title {
-    font-size: 16px; /* زيادة حجم الخط */
+    font-size: 14px;
     font-weight: bold;
     color: #333;
     margin: 0 0 8px 0;
 }
 
 .ad-text {
-    font-size: 14px; /* زيادة حجم الخط */
+    font-size: 12px;
     color: #333;
     margin: 0 0 8px 0;
     white-space: normal;
@@ -588,7 +541,7 @@ input:checked + .slider:before {
     border-radius: 5px;
     text-decoration: none;
     display: inline-block;
-    font-size: 14px; /* زيادة حجم الخط */
+    font-size: 12px;
 }
 
 .ad-button:hover {
@@ -738,198 +691,6 @@ input:checked + .slider:before {
     opacity: 1;
 }
 
-.share-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
-}
-
-.share-modal-content {
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    position: relative;
-    max-width: 400px;
-    width: 90%;
-    text-align: center;
-    color: #333;
-}
-
-.share-modal-content p {
-    margin: 0 0 15px;
-    font-size: 16px;
-}
-
-#qrCode {
-    margin: 0 auto 15px;
-    width: 150px;
-    height: 150px;
-}
-
-.share-link-container {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-}
-
-#shareLink {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 14px;
-    background: #f5f5f5;
-}
-
-#copyLinkButton {
-    background: #007bff;
-    color: #fff;
-    border: none;
-    padding: 8px 16px;
-    font-size: 14px;
-}
-
-#copyLinkButton:hover {
-    background: #0056b3;
-}
-
-.modal-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 24px;
-    cursor: pointer;
-    color: #333;
-}
-
-.modal-close:hover {
-    color: #dc3545;
-}
-
-@media (orientation: landscape) {
-    #hexGridHost, #hexGridContestant {
-        width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
-        max-width: 900px;
-        min-width: 600px;
-    }
-
-    #hexGridDisplay {
-        width: calc(7 * (90vh / 7) + 6 * (90vh / 200)); /* تعتمد على الارتفاع */
-        max-width: 900px;
-        min-width: 600px;
-    }
-
-    #hexGridHost .hexagon, #hexGridContestant .hexagon {
-        width: calc(90vw / 7);
-        height: calc(1.15 * (90vw / 7));
-        font-size: calc(90vw / 28);
-    }
-
-    #hexGridDisplay .hexagon {
-        width: calc(90vh / 7); /* تعتمد على الارتفاع */
-        height: calc(1.15 * (90vh / 7)); /* تعتمد على الارتفاع */
-        font-size: calc(90vh / 28); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row:not(:first-child), #hexGridContestant .row:not(:first-child) {
-        margin-top: calc(-90vw / 35);
-    }
-
-    #hexGridDisplay .row:not(:first-child) {
-        margin-top: calc(-90vh / 35); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row:nth-child(even), #hexGridContestant .row:nth-child(even) {
-        margin-right: calc(0.5 * (90vw / 7) + (90vw / 200));
-    }
-
-    #hexGridDisplay .row:nth-child(even) {
-        margin-right: calc(0.5 * (90vh / 7) + (90vh / 200)); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row:nth-child(odd), #hexGridContestant .row:nth-child(odd) {
-        margin-left: calc(0.5 * (90vw / 7) + (90vw / 200));
-    }
-
-    #hexGridDisplay .row:nth-child(odd) {
-        margin-left: calc(0.5 * (90vh / 7) + (90vh / 200)); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row, #hexGridContestant .row {
-        gap: calc(90vw / 100);
-    }
-
-    #hexGridDisplay .row {
-        gap: calc(90vh / 100); /* تعتمد على الارتفاع */
-    }
-}
-
-@media (orientation: portrait) {
-    #hexGridHost, #hexGridContestant {
-        width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
-        max-width: 600px;
-        min-width: 300px;
-    }
-
-    #hexGridDisplay {
-        width: calc(7 * (95vh / 7) + 6 * (95vh / 200)); /* تعتمد على الارتفاع */
-        max-width: 600px;
-        min-width: 300px;
-    }
-
-    #hexGridHost .hexagon, #hexGridContestant .hexagon {
-        width: calc(95vw / 7);
-        height: calc(1.15 * (95vw / 7));
-        font-size: calc(95vw / 28);
-    }
-
-    #hexGridDisplay .hexagon {
-        width: calc(95vh / 7); /* تعتمد على الارتفاع */
-        height: calc(1.15 * (95vh / 7)); /* تعتمد على الارتفاع */
-        font-size: calc(95vh / 28); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row:not(:first-child), #hexGridContestant .row:not(:first-child) {
-        margin-top: calc(-95vw / 35);
-    }
-
-    #hexGridDisplay .row:not(:first-child) {
-        margin-top: calc(-95vh / 35); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row:nth-child(even), #hexGridContestant .row:nth-child(even) {
-        margin-right: calc(0.5 * (95vw / 7) + (95vw / 200));
-    }
-
-    #hexGridDisplay .row:nth-child(even) {
-        margin-right: calc(0.5 * (95vh / 7) + (95vh / 200)); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row:nth-child(odd), #hexGridContestant .row:nth-child(odd) {
-        margin-left: calc(0.5 * (95vw / 7) + (95vw / 200));
-    }
-
-    #hexGridDisplay .row:nth-child(odd) {
-        margin-left: calc(0.5 * (95vh / 7) + (95vh / 200)); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row, #hexGridContestant .row {
-        gap: calc(95vw / 100);
-    }
-
-    #hexGridDisplay .row {
-        gap: calc(95vh / 100); /* تعتمد على الارتفاع */
-    }
-}
-
 @media (max-width: 767px) {
     .sliders-container {
         display: none;
@@ -941,13 +702,7 @@ input:checked + .slider:before {
         min-width: 300px;
     }
 
-    #hexGridDisplay {
-        width: calc(7 * (95vh / 7) + 6 * (95vh / 200)); /* تعتمد على الارتفاع */
-        max-width: 600px;
-        min-width: 300px;
-    }
-
-    #hexGridHost .hexagon, #hexGridContestant .hexagon {
+    .hexagon {
         width: calc(95vw / 7);
         height: calc(1.15 * (95vw / 7));
         min-width: 30px;
@@ -955,44 +710,20 @@ input:checked + .slider:before {
         font-size: calc(95vw / 28);
     }
 
-    #hexGridDisplay .hexagon {
-        width: calc(95vh / 7); /* تعتمد على الارتفاع */
-        height: calc(1.15 * (95vh / 7)); /* تعتمد على الارتفاع */
-        min-width: 30px;
-        min-height: 34.5px;
-        font-size: calc(95vh / 28); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row:not(:first-child), #hexGridContestant .row:not(:first-child) {
+    .row:not(:first-child) {
         margin-top: calc(-95vw / 35);
     }
 
-    #hexGridDisplay .row:not(:first-child) {
-        margin-top: calc(-95vh / 35); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row:nth-child(even), #hexGridContestant .row:nth-child(even) {
+    .row:nth-child(even) {
         margin-right: calc(0.5 * (95vw / 7) + (95vw / 200));
     }
 
-    #hexGridDisplay .row:nth-child(even) {
-        margin-right: calc(0.5 * (95vh / 7) + (95vh / 200)); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row:nth-child(odd), #hexGridContestant .row:nth-child(odd) {
+    .row:nth-child(odd) {
         margin-left: calc(0.5 * (95vw / 7) + (95vw / 200));
     }
 
-    #hexGridDisplay .row:nth-child(odd) {
-        margin-left: calc(0.5 * (95vh / 7) + (95vh / 200)); /* تعتمد على الارتفاع */
-    }
-
-    #hexGridHost .row, #hexGridContestant .row {
+    .row {
         gap: calc(95vw / 100);
-    }
-
-    #hexGridDisplay .row {
-        gap: calc(95vh / 100); /* تعتمد على الارتفاع */
     }
 
     .icon-container {
@@ -1094,15 +825,15 @@ input:checked + .slider:before {
     }
 
     .ad-title {
-        font-size: 16px; /* زيادة حجم الخط */
+        font-size: 18px;
     }
 
     .ad-text {
-        font-size: 14px; /* زيادة حجم الخط */
+        font-size: 14px;
     }
 
     .ad-button {
-        font-size: 14px; /* زيادة حجم الخط */
+        font-size: 12px;
         padding: 4px 8px;
     }
 
