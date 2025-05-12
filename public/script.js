@@ -105,7 +105,7 @@ function resetToPhoneScreen() {
     document.getElementById('contestantScreen').classList.remove('active');
     document.getElementById('welcomeScreen').classList.remove('active');
     document.getElementById('phoneScreen').classList.add('active');
-    document.getElementById('advertisementsContainer').classList.remove('hidden');
+    document.getElementById('announcementssContainer').classList.remove('hidden');
     localStorage.removeItem('sessionToken');
     token = null;
     phoneNumber = null;
@@ -147,9 +147,9 @@ function handleMessages(event) {
             fetchGeneralQuestions();
             fetchSessionQuestions();
             updateCodesCount();
-            fetchAdvertisements();
+            fetchannouncementss();
         }
-        if (!isAdsFetched) fetchAdvertisements();
+        if (!isAdsFetched) fetchannouncementss();
     } else if (type === 'codeError') {
         document.getElementById('phoneError').innerText = data;
         document.getElementById('phoneError').className = 'error-message';
@@ -165,7 +165,7 @@ function handleMessages(event) {
         updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
         updateTeams(data.teams);
         updateBuzzer(data.buzzer);
-        if (!isAdsFetched) fetchAdvertisements();
+        if (!isAdsFetched) fetchannouncementss();
     } else if (type === 'codesGenerated') {
         const generatedCodesDiv = document.getElementById('generatedCodes');
         generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
@@ -231,17 +231,17 @@ function handleMessages(event) {
         document.getElementById('adminError').innerText = '';
         document.getElementById('restoreFile').value = '';
         updateCodesCount();
-    } else if (type === 'activeAdvertisements') {
-        displayAdvertisements(data);
+    } else if (type === 'activeannouncementss') {
+        displayannouncementss(data);
         isAdsFetched = true;
-    } else if (type === 'advertisements') {
-        displayAdminAdvertisements(data);
-    } else if (type === 'advertisementAdded') {
+    } else if (type === 'announcementss') {
+        displayAdminannouncementss(data);
+    } else if (type === 'announcementsAdded') {
         showToast(data, 'success');
-        fetchAdvertisements();
-    } else if (type === 'advertisementDeleted') {
+        fetchannouncementss();
+    } else if (type === 'announcementsDeleted') {
         showToast(data, 'success');
-        fetchAdvertisements();
+        fetchannouncementss();
     } else if (type === 'displayLink') {
         // معالجة الرابط الخاص بصفحة العرض
         const modal = document.getElementById('shareModal');
@@ -634,7 +634,7 @@ document.getElementById('addAdButton').addEventListener('click', () => {
     const link = document.getElementById('adLink').value.trim();
     const button_text = document.getElementById('adButtonText').value.trim();
     if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'addAdvertisement', data: { title, text, link, button_text, phoneNumber } }));
+        ws.send(JSON.stringify({ type: 'addannouncements', data: { title, text, link, button_text, phoneNumber } }));
         document.getElementById('adTitle').value = '';
         document.getElementById('adText').value = '';
         document.getElementById('adLink').value = '';
@@ -644,21 +644,23 @@ document.getElementById('addAdButton').addEventListener('click', () => {
     }
 });
 
-function fetchAdvertisements() {
-    if (isAdsFetched) return;
+function fetchAnnouncements() {
     if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'getAdvertisements', data: { phoneNumber } }));
+        console.log('Requesting announcements for admin');
+        ws.send(JSON.stringify({ type: 'getAnnouncements', data: { phoneNumber } }));
+    } else {
+        console.error('WebSocket is not open');
     }
 }
 
-function displayAdvertisements(ads) {
-    const container = document.getElementById('advertisementsContainer');
+function displayannouncementss(ads) {
+    const container = document.getElementById('announcementssContainer');
     if (!container) return;
     const existingAds = new Set(Array.from(container.children).map(child => child.dataset.id));
     ads.forEach(ad => {
         if ((ad.title || ad.text || ad.link) && !existingAds.has(ad.id.toString())) {
             const card = document.createElement('div');
-            card.className = 'advertisement-card';
+            card.className = 'announcements-card';
             card.dataset.id = ad.id;
             if (ad.title) {
                 const title = document.createElement('p');
@@ -696,12 +698,12 @@ function displayAdvertisements(ads) {
     container.classList.remove('hidden');
 }
 
-function displayAdminAdvertisements(ads) {
-    const list = document.getElementById('advertisementsList');
+function displayAdminannouncementss(ads) {
+    const list = document.getElementById('announcementssList');
     list.innerHTML = '';
     ads.forEach(ad => {
         const div = document.createElement('div');
-        div.className = 'advertisement-item';
+        div.className = 'announcements-item';
         const title = ad.title ? ad.title.substring(0, 30) + (ad.title.length > 30 ? '...' : '') : 'بدون عنوان';
         div.innerHTML = `<span>${title}</span>`;
         const deleteBtn = document.createElement('button');
@@ -710,7 +712,7 @@ function displayAdminAdvertisements(ads) {
         deleteBtn.dataset.id = ad.id;
         deleteBtn.addEventListener('click', () => {
             if (confirm('هل أنت متأكد من حذف هذا الإعلان؟')) {
-                ws.send(JSON.stringify({ type: 'deleteAdvertisement', data: { id: ad.id, phoneNumber } }));
+                ws.send(JSON.stringify({ type: 'deleteannouncements', data: { id: ad.id, phoneNumber } }));
             }
         });
         div.appendChild(deleteBtn);
