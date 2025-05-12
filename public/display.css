@@ -134,6 +134,7 @@ body {
     cursor: default;
 }
 
+/* أنماط قص الحواف الخارجية للسداسيات */
 .outer-fixed-odd-right {
     clip-path: polygon(0% 25%, 50% 0%, 50% 100%, 0% 75%, 0% 25%);
 }
@@ -165,36 +166,6 @@ body {
     text-align: center;
 }
 
-/* New styles for Party Mode */
-.party-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 10vw; /* Large font size */
-    font-weight: bold;
-    color: #fff;
-    text-shadow: 0 0 10px #ff4081, 0 0 20px #81c784, 0 0 30px #ffd700;
-    z-index: 10;
-    animation: pulse 1.5s ease-in-out infinite, colorFlash 3s linear infinite;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.5) 100%);
-    padding: 20px;
-    border-radius: 10px;
-}
-
-@keyframes pulse {
-    0% { transform: translate(-50%, -50%) scale(1); }
-    50% { transform: translate(-50%, -50%) scale(1.2); }
-    100% { transform: translate(-50%, -50%) scale(1); }
-}
-
-@keyframes colorFlash {
-    0% { color: #ff4081; text-shadow: 0 0 10px #ff4081, 0 0 20px #81c784, 0 0 30px #ffd700; }
-    33% { color: #81c784; text-shadow: 0 0 10px #81c784, 0 0 20px #ffd700, 0 0 30px #ff4081; }
-    66% { color: #ffd700; text-shadow: 0 0 10px #ffd700, 0 0 20px #ff4081, 0 0 30px #81c784; }
-    100% { color: #ff4081; text-shadow: 0 0 10px #ff4081, 0 0 20px #81c784, 0 0 30px #ffd700; }
-}
-
 @media (orientation: landscape) {
     #hexGridDisplay {
         width: calc(7 * (90vh / 7) + 6 * (90vh / 200));
@@ -222,10 +193,6 @@ body {
 
     #hexGridDisplay .row {
         gap: calc(90vh / 100);
-    }
-
-    .party-text {
-        font-size: 8vw; /* Slightly smaller for landscape */
     }
 }
 
@@ -257,10 +224,6 @@ body {
     #hexGridDisplay .row {
         gap: calc(95vh / 100);
     }
-
-    .party-text {
-        font-size: 12vw; /* Larger for portrait */
-    }
 }
 
 @media (max-width: 767px) {
@@ -278,9 +241,7 @@ body {
         font-size: calc(95vh / 28);
     }
 
-    #hexGridDisplay .row:not(:first-childээ
-
-{
+    #hexGridDisplay .row:not(:first-child) {
         margin-top: calc(-95vh / 35);
     }
 
@@ -299,9 +260,5 @@ body {
     .buzzer-info-display {
         font-size: 20px;
         margin: 5px 0 20px 0;
-    }
-
-    .party-text {
-        font-size: 10vw; /* Adjusted for small screens */
     }
 }
