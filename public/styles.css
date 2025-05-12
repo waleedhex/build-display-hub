@@ -61,7 +61,6 @@ body {
 
 #hexGridHost {
     width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
-    max-width: 900px;
     min-width: 600px;
     transform: scale(var(--scale-factor, 1));
     transform-origin: center center;
@@ -69,7 +68,6 @@ body {
 
 #hexGridContestant {
     width: calc(7 * (90vw / 7) + 6 * (90vw / 200));
-    max-width: 900px;
     min-width: 600px;
 }
 
