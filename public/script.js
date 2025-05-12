@@ -105,7 +105,7 @@ function resetToPhoneScreen() {
     document.getElementById('contestantScreen').classList.remove('active');
     document.getElementById('welcomeScreen').classList.remove('active');
     document.getElementById('phoneScreen').classList.add('active');
-    document.getElementById('announcementssContainer').classList.remove('hidden');
+    document.getElementById('announcementsContainer').classList.remove('hidden');
     localStorage.removeItem('sessionToken');
     token = null;
     phoneNumber = null;
@@ -147,9 +147,9 @@ function handleMessages(event) {
             fetchGeneralQuestions();
             fetchSessionQuestions();
             updateCodesCount();
-            fetchannouncementss();
+            fetchAnnouncements();
         }
-        if (!isAdsFetched) fetchannouncementss();
+        if (!isAdsFetched) fetchAnnouncements();
     } else if (type === 'codeError') {
         document.getElementById('phoneError').innerText = data;
         document.getElementById('phoneError').className = 'error-message';
@@ -165,7 +165,7 @@ function handleMessages(event) {
         updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
         updateTeams(data.teams);
         updateBuzzer(data.buzzer);
-        if (!isAdsFetched) fetchannouncementss();
+        if (!isAdsFetched) fetchAnnouncements();
     } else if (type === 'codesGenerated') {
         const generatedCodesDiv = document.getElementById('generatedCodes');
         generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
@@ -231,24 +231,23 @@ function handleMessages(event) {
         document.getElementById('adminError').innerText = '';
         document.getElementById('restoreFile').value = '';
         updateCodesCount();
-    } else if (type === 'activeannouncementss') {
-        displayannouncementss(data);
+    } else if (type === 'activeAnnouncements') {
+        displayAnnouncements(data);
         isAdsFetched = true;
-    } else if (type === 'announcementss') {
-        displayAdminannouncementss(data);
-    } else if (type === 'announcementsAdded') {
+    } else if (type === 'Announcements') {
+        displayAdminAnnouncements(data);
+    } else if (type === 'announcementAdded') {
         showToast(data, 'success');
-        fetchannouncementss();
-    } else if (type === 'announcementsDeleted') {
+        fetchAnnouncements();
+    } else if (type === 'announcementDeleted') {
         showToast(data, 'success');
-        fetchannouncementss();
+        fetchAnnouncements();
     } else if (type === 'displayLink') {
-        // معالجة الرابط الخاص بصفحة العرض
         const modal = document.getElementById('shareModal');
         const shareLink = document.getElementById('shareLink');
         const qrCodeDiv = document.getElementById('qrCode');
         shareLink.value = data.url;
-        qrCodeDiv.innerHTML = ''; // تنظيف QR كود سابق إن وجد
+        qrCodeDiv.innerHTML = '';
         new QRCode(qrCodeDiv, {
             text: data.url,
             width: 150,
@@ -357,7 +356,6 @@ function initializeSizeSlider() {
     }
 }
 
-// تهيئة النافذة العائمة للمشاركة
 function initializeShareModal() {
     const shareButton = document.getElementById('shareButton');
     const closeModal = document.getElementById('closeModal');
@@ -392,7 +390,6 @@ function initializeShareModal() {
         });
     }
 
-    // إغلاق النافذة عند النقر خارجها
     window.addEventListener('click', (event) => {
         if (event.target === modal) {
             modal.style.display = 'none';
@@ -634,7 +631,7 @@ document.getElementById('addAdButton').addEventListener('click', () => {
     const link = document.getElementById('adLink').value.trim();
     const button_text = document.getElementById('adButtonText').value.trim();
     if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: 'addannouncements', data: { title, text, link, button_text, phoneNumber } }));
+        ws.send(JSON.stringify({ type: 'addAnnouncement', data: { title, text, link, button_text, phoneNumber } }));
         document.getElementById('adTitle').value = '';
         document.getElementById('adText').value = '';
         document.getElementById('adLink').value = '';
@@ -653,9 +650,12 @@ function fetchAnnouncements() {
     }
 }
 
-function displayannouncementss(ads) {
-    const container = document.getElementById('announcementssContainer');
-    if (!container) return;
+function displayAnnouncements(ads) {
+    const container = document.getElementById('announcementsContainer');
+    if (!container) {
+        console.error('announcementsContainer not found in DOM');
+        return;
+    }
     const existingAds = new Set(Array.from(container.children).map(child => child.dataset.id));
     ads.forEach(ad => {
         if ((ad.title || ad.text || ad.link) && !existingAds.has(ad.id.toString())) {
@@ -684,7 +684,7 @@ function displayannouncementss(ads) {
             }
             const closeBtn = document.createElement('button');
             closeBtn.className = 'ad-close-btn';
-            closeBtn.innerHTML = '&times;';
+            closeBtn.innerHTML = '×';
             closeBtn.addEventListener('click', () => {
                 card.remove();
                 if (!container.hasChildNodes()) {
@@ -698,21 +698,31 @@ function displayannouncementss(ads) {
     container.classList.remove('hidden');
 }
 
-function displayAdminannouncementss(ads) {
-    const list = document.getElementById('announcementssList');
+function displayAdminAnnouncements(ads) {
+    const list = document.getElementById('announcementsList');
+    if (!list) {
+        console.error('عنصر announcementsList غير موجود في DOM');
+        return;
+    }
     list.innerHTML = '';
+    console.log('الإعلانات المستلمة:', ads);
+    if (ads.length === 0) {
+        list.innerHTML = '<p>لا توجد إعلانات في قاعدة البيانات</p>';
+        return;
+    }
     ads.forEach(ad => {
         const div = document.createElement('div');
         div.className = 'announcements-item';
         const title = ad.title ? ad.title.substring(0, 30) + (ad.title.length > 30 ? '...' : '') : 'بدون عنوان';
-        div.innerHTML = `<span>${title}</span>`;
+        const status = ad.is_active ? 'نشط' : 'غير نشط';
+        div.innerHTML = `<span>${title} (${status})</span>`;
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-ad-btn';
         deleteBtn.textContent = 'حذف';
         deleteBtn.dataset.id = ad.id;
         deleteBtn.addEventListener('click', () => {
             if (confirm('هل أنت متأكد من حذف هذا الإعلان؟')) {
-                ws.send(JSON.stringify({ type: 'deleteannouncements', data: { id: ad.id, phoneNumber } }));
+                ws.send(JSON.stringify({ type: 'deleteAnnouncement', data: { id: ad.id, phoneNumber } }));
             }
         });
         div.appendChild(deleteBtn);

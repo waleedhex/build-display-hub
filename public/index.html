@@ -6,7 +6,6 @@
     <title>لوحة الحروف السداسية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
-    <!-- إضافة مكتبة qrcode.js لتوليد QR كود -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
@@ -15,7 +14,7 @@
             <h2>أدخل رمز الجلسة</h2>
             <input type="text" id="phoneNumber" placeholder="مثال: X7K9P2">
             <button id="submitPhoneButton">تأكيد</button>
-            <div id="announcementssContainer"></div>
+            <div id="announcementsContainer"></div>
             <p id="phoneError" class="error-message"></p>
         </div>
 
@@ -62,7 +61,7 @@
                     <input type="url" id="adLink" placeholder="رابط الإعلان (اختياري)">
                     <input type="text" id="adButtonText" placeholder="اسم الزر (اختياري)">
                     <button id="addAdButton">إضافة الإعلان</button>
-                    <div id="announcementssList" class="questions-container"></div>
+                    <div id="announcementsList" class="questions-container"></div>
                 </div>
                 <p id="questionsCount" class="stats"></p>
                 <div id="generatedCodes" style="margin-top: 10px;"></div>
@@ -120,7 +119,6 @@
                 <button id="changeColorsButton" class="icon-btn" title="تغيير الألوان"><i class="fas fa-palette"></i></button>
                 <button id="partyButton" class="icon-btn party-btn" title="بارتي">🎉</button>
                 <button id="resetBuzzerButton" class="icon-btn" title="إعادة تعيين الجرس"><i class="fas fa-bell"></i></button>
-                <!-- إضافة زر المشاركة -->
                 <button id="shareButton" class="icon-btn" title="مشاركة الجلسة"><i class="fas fa-share-alt"></i></button>
                 <label class="toggle-switch">
                     <input type="checkbox" id="toggleQuestions" checked>
@@ -166,7 +164,6 @@
             <div id="teamInfo" style="margin-top: 10px; color: #fff;"></div>
         </div>
 
-        <!-- إضافة النافذة العائمة للمشاركة -->
         <div id="shareModal" class="share-modal">
             <div class="share-modal-content">
                 <span id="closeModal" class="modal-close">&times;</span>
@@ -186,5 +183,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="script.js"></script>
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93e313325d69b0bb',t:'MTc0Njk4MTE3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93e3645f8b1cbfb5',t:'MTc0Njk4NDQ5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'93ece86c8dbab05b',t:'MTc0NzA4NDI3OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>

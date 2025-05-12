@@ -86,7 +86,7 @@ async function initDatabase() {
                 )
             `),
             db.query(`
-                CREATE TABLE IF NOT EXISTS announcementss (
+                CREATE TABLE IF NOT EXISTS Announcements (
                     id SERIAL PRIMARY KEY,
                     title TEXT,
                     text TEXT,
@@ -381,7 +381,6 @@ async function handleClientDisconnect(client) {
             }
         }, 30000);
     } else if (client.role === 'display' && session) {
-        // إعادة تعيين حالة جهاز العرض عند الانقطاع
         session.displayConnected = false;
         await saveSession(client.sessionId, session);
     }
@@ -393,12 +392,11 @@ wss.on('connection', (ws) => {
     const clientId = uuidv4();
     ws.clientId = clientId;
 
-    // إرسال الإعلانات النشطة عند الاتصال الأولي
-    db.query('SELECT id, title, text, link, button_text FROM announcementss WHERE is_active = TRUE')
+    db.query('SELECT id, title, text, link, button_text FROM Announcements WHERE is_active = TRUE')
         .then(result => {
-            ws.send(JSON.stringify({ type: 'activeannouncementss', data: result.rows }));
+            ws.send(JSON.stringify({ type: 'activeAnnouncements', data: result.rows }));
         })
-        .catch(err => console.error('Error fetching active announcementss:', err));
+        .catch(err => console.error('Error fetching active Announcements:', err));
 
     ws.on('pong', () => {
         console.log('Received pong from client');
@@ -419,9 +417,7 @@ wss.on('connection', (ws) => {
                     if (session) {
                         const client = { ws, role, name: ws.playerName, sessionId: ws.sessionId, clientId };
                         if (role === 'display') {
-                            // التحقق من عدد الأجهزة المتصلة بدور display
                             if (session.displayConnected) {
-                                // تجاهل الاتصال الجديد دون إرسال رد
                                 return;
                             }
                             session.displayConnected = true;
@@ -475,7 +471,7 @@ wss.on('connection', (ws) => {
                             partyMode: false,
                             questions: { general: await loadQuestions(null, true), session: await loadQuestions(ws.sessionId, false) },
                             lastActivity: Date.now(),
-                            displayConnected: false // متغير جديد لتتبع جهاز العرض
+                            displayConnected: false
                         };
                         sessions.set(ws.sessionId, session);
                         await saveSession(ws.sessionId, session);
@@ -645,7 +641,7 @@ wss.on('connection', (ws) => {
                 }
                 break;
 
-            case 'addannouncements':
+            case 'addAnnouncement':
                 const adminCheckAdAdd = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
                 if (adminCheckAdAdd.rows.length > 0) {
                     const { title, text, link, button_text } = data;
@@ -654,34 +650,34 @@ wss.on('connection', (ws) => {
                     } else {
                         const validLink = link && (link.startsWith('http://') || link.startsWith('https://')) ? link : null;
                         const result = await db.query(
-                            'INSERT INTO announcementss (title, text, link, button_text, is_active) VALUES ($1, $2, $3, $4, TRUE) RETURNING id, title, text, link, button_text',
+                            'INSERT INTO Announcements (title, text, link, button_text, is_active) VALUES ($1, $2, $3, $4, TRUE) RETURNING id, title, text, link, button_text',
                             [title || null, text || null, validLink, button_text || 'اضغط هنا']
                         );
-                        ws.send(JSON.stringify({ type: 'announcementsAdded', data: 'تم إضافة الإعلان بنجاح' }));
-                        broadcast(ws.sessionId, { type: 'activeannouncementss', data: await db.query('SELECT id, title, text, link, button_text FROM announcementss WHERE is_active = TRUE').then(res => res.rows) }, null);
+                        ws.send(JSON.stringify({ type: 'announcementAdded', data: 'تم إضافة الإعلان بنجاح' }));
+                        broadcast(ws.sessionId, { type: 'activeAnnouncements', data: await db.query('SELECT id, title, text, link, button_text FROM Announcements WHERE is_active = TRUE').then(res => res.rows) }, null);
                     }
                 }
                 break;
 
-            case 'deleteannouncements':
+            case 'deleteAnnouncement':
                 const adminCheckAdDelete = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
                 if (adminCheckAdDelete.rows.length > 0) {
                     const adId = data.id;
-                    const result = await db.query('DELETE FROM announcementss WHERE id = $1', [adId]);
+                    const result = await db.query('DELETE FROM Announcements WHERE id = $1', [adId]);
                     if (result.rowCount > 0) {
-                        ws.send(JSON.stringify({ type: 'announcementsDeleted', data: 'تم حذف الإعلان بنجاح' }));
-                        broadcast(ws.sessionId, { type: 'activeannouncementss', data: await db.query('SELECT id, title, text, link, button_text FROM announcementss WHERE is_active = TRUE').then(res => res.rows) }, null);
+                        ws.send(JSON.stringify({ type: 'announcementDeleted', data: 'تم حذف الإعلان بنجاح' }));
+                        broadcast(ws.sessionId, { type: 'activeAnnouncements', data: await db.query('SELECT id, title, text, link, button_text FROM Announcements WHERE is_active = TRUE').then(res => res.rows) }, null);
                     } else {
                         ws.send(JSON.stringify({ type: 'adminError', data: 'الإعلان غير موجود' }));
                     }
                 }
                 break;
 
-            case 'getannouncementss':
+            case 'getAnnouncements':
                 const adminCheckAdGet = await db.query('SELECT code FROM subscribers WHERE code = $1 AND is_admin = TRUE', [ws.sessionId]);
                 if (adminCheckAdGet.rows.length > 0) {
-                    const result = await db.query('SELECT id, title, text, link, button_text, is_active FROM announcementss');
-                    ws.send(JSON.stringify({ type: 'announcementss', data: result.rows }));
+                    const result = await db.query('SELECT id, title, text, link, button_text, is_active FROM Announcements');
+                    ws.send(JSON.stringify({ type: 'Announcements', data: result.rows }));
                 }
                 break;
 

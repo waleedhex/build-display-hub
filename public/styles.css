@@ -461,10 +461,11 @@ input:checked + .slider:before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 0;
+    padding: 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    border-bottom: 1px solid #eee;
 }
 
 .delete-ad-btn {
@@ -480,7 +481,7 @@ input:checked + .slider:before {
     background-color: #c82333;
 }
 
-#announcementssContainer {
+#announcementsContainer {
     width: 100%;
     max-width: 800px;
     display: flex;
@@ -489,7 +490,7 @@ input:checked + .slider:before {
     margin: 20px 0;
 }
 
-#announcementssContainer.hidden {
+#announcementsContainer.hidden {
     display: none;
 }
 
@@ -503,6 +504,7 @@ input:checked + .slider:before {
     width: 600px;
     max-width: 90%;
     height: auto;
+ Dunkirk: none;
     min-height: 80px;
     text-align: center;
     display: flex;
@@ -818,7 +820,7 @@ input:checked + .slider:before {
     }
 
     .announcements-card {
-        width: 80%;
+        width: 60%;
         max-width: 90%;
     }
 
@@ -838,6 +840,8 @@ input:checked + .slider:before {
     .ad-close-btn {
         font-size: 14px;
     }
+}
+
 .share-modal {
     display: none;
     position: fixed;
@@ -912,5 +916,4 @@ input:checked + .slider:before {
 
 .modal-close:hover {
     color: #dc3545;
-}
 }
