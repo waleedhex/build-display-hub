@@ -625,17 +625,17 @@ document.getElementById('restoreFile').addEventListener('change', () => {
     }
 });
 
-document.getElementById('addAdButton').addEventListener('click', () => {
-    const title = document.getElementById('adTitle').value.trim();
-    const text = document.getElementById('adText').value.trim();
-    const link = document.getElementById('adLink').value.trim();
-    const button_text = document.getElementById('adButtonText').value.trim();
+document.getElementById('addAnnouncementButton').addEventListener('click', () => {
+    const title = document.getElementById('announcementTitle').value.trim();
+    const text = document.getElementById('announcementText').value.trim();
+    const link = document.getElementById('announcementLink').value.trim();
+    const button_text = document.getElementById('announcementButtonText').value.trim();
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'addAnnouncement', data: { title, text, link, button_text, phoneNumber } }));
-        document.getElementById('adTitle').value = '';
-        document.getElementById('adText').value = '';
-        document.getElementById('adLink').value = '';
-        document.getElementById('adButtonText').value = '';
+        document.getElementById('announcementTitle').value = '';
+        document.getElementById('announcementText').value = '';
+        document.getElementById('announcementLink').value = '';
+        document.getElementById('announcementButtonText').value = '';
     } else {
         showToast('لا يوجد اتصال بالخادم!', 'error');
     }
@@ -664,26 +664,26 @@ function displayAnnouncements(ads) {
             card.dataset.id = ad.id;
             if (ad.title) {
                 const title = document.createElement('p');
-                title.className = 'ad-title';
+                title.className = 'announcement-title';
                 title.textContent = ad.title;
                 card.appendChild(title);
             }
             if (ad.text) {
                 const text = document.createElement('p');
-                text.className = 'ad-text';
+                text.className = 'announcement-text';
                 text.textContent = ad.text;
                 card.appendChild(text);
             }
             if (ad.link) {
                 const button = document.createElement('a');
-                button.className = 'ad-button';
+                button.className = 'announcement-button';
                 button.href = ad.link;
                 button.target = '_blank';
                 button.textContent = ad.button_text;
                 card.appendChild(button);
             }
             const closeBtn = document.createElement('button');
-            closeBtn.className = 'ad-close-btn';
+            closeBtn.className = 'announcement-close-btn';
             closeBtn.innerHTML = '×';
             closeBtn.addEventListener('click', () => {
                 card.remove();
@@ -717,7 +717,7 @@ function displayAdminAnnouncements(ads) {
         const status = ad.is_active ? 'نشط' : 'غير نشط';
         div.innerHTML = `<span>${title} (${status})</span>`;
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'delete-ad-btn';
+        deleteBtn.className = 'delete-announcement-btn';
         deleteBtn.textContent = 'حذف';
         deleteBtn.dataset.id = ad.id;
         deleteBtn.addEventListener('click', () => {

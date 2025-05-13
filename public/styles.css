@@ -453,7 +453,7 @@ input:checked + .slider:before {
     background-color: #FFA000;
 }
 
-.ad-management {
+.announcement-management {
     margin-top: 20px;
 }
 
@@ -468,7 +468,7 @@ input:checked + .slider:before {
     border-bottom: 1px solid #eee;
 }
 
-.delete-ad-btn {
+.delete-announcement-btn {
     background-color: #dc3545;
     color: #fff;
     padding: 5px 10px;
@@ -477,7 +477,7 @@ input:checked + .slider:before {
     cursor: pointer;
 }
 
-.delete-ad-btn:hover {
+.delete-announcement-btn:hover {
     background-color: #c82333;
 }
 
@@ -504,7 +504,6 @@ input:checked + .slider:before {
     width: 600px;
     max-width: 90%;
     height: auto;
- Dunkirk: none;
     min-height: 80px;
     text-align: center;
     display: flex;
@@ -519,14 +518,14 @@ input:checked + .slider:before {
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
 }
 
-.ad-title {
+.announcement-title {
     font-size: 14px;
     font-weight: bold;
     color: #333;
     margin: 0 0 8px 0;
 }
 
-.ad-text {
+.announcement-text {
     font-size: 12px;
     color: #333;
     margin: 0 0 8px 0;
@@ -534,7 +533,7 @@ input:checked + .slider:before {
     word-wrap: break-word;
 }
 
-.ad-button {
+.announcement-button {
     background: #000;
     color: #fff;
     padding: 6px 12px;
@@ -544,11 +543,11 @@ input:checked + .slider:before {
     font-size: 12px;
 }
 
-.ad-button:hover {
+.announcement-button:hover {
     background: #333;
 }
 
-.ad-close-btn {
+.announcement-close-btn {
     position: absolute;
     top: 5px;
     right: 5px;
@@ -559,7 +558,7 @@ input:checked + .slider:before {
     cursor: pointer;
 }
 
-.ad-close-btn:hover {
+.announcement-close-btn:hover {
     color: #dc3545;
 }
 
@@ -824,20 +823,20 @@ input:checked + .slider:before {
         max-width: 90%;
     }
 
-    .ad-title {
+    .announcement-title {
         font-size: 18px;
     }
 
-    .ad-text {
+    .announcement-text {
         font-size: 14px;
     }
 
-    .ad-button {
+    .announcement-button {
         font-size: 12px;
         padding: 4px 8px;
     }
 
-    .ad-close-btn {
+    .announcement-close-btn {
         font-size: 14px;
     }
 }
