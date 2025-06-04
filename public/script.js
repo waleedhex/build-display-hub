@@ -32,6 +32,8 @@ let reconnectAttempts = 0;
 const maxReconnectAttempts = 10;
 const reconnectInterval = 3000;
 let isAdsFetched = false;
+let joinErrorAttempts = 0;
+const maxJoinErrorAttempts = 3;
 
 function connectWebSocket() {
     try {
@@ -39,6 +41,7 @@ function connectWebSocket() {
         ws.onopen = () => {
             console.log('Connected to WebSocket');
             reconnectAttempts = 0;
+            joinErrorAttempts = 0;
             hideConnectionLost();
             if (token) {
                 console.log('Attempting to reconnect with token:', token);
@@ -47,19 +50,27 @@ function connectWebSocket() {
                 console.log('Joining with phoneNumber and playerName:', phoneNumber, playerName);
                 ws.send(JSON.stringify({ type: 'join', data: { role: isHost ? 'host' : 'contestant', name: playerName, phoneNumber } }));
             }
+            // إرسال ping دوري
+            setInterval(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ type: 'ping' }));
+                }
+            }, 5000);
         };
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
             showConnectionLost();
+            ws.close(); // إغلاق الاتصال لتفعيل ws.onclose
         };
         ws.onclose = () => {
             if (reconnectAttempts < maxReconnectAttempts) {
+                const delay = Math.min(reconnectInterval * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff
                 setTimeout(() => {
                     reconnectAttempts++;
-                    console.log(`Reconnection attempt ${reconnectAttempts}`);
+                    console.log(`Reconnection attempt ${reconnectAttempts} after ${delay}ms`);
                     showConnectionLost();
                     connectWebSocket();
-                }, reconnectInterval);
+                }, delay);
             } else {
                 console.log('Max reconnection attempts reached, showing return button');
                 showConnectionLost(true);
@@ -67,7 +78,7 @@ function connectWebSocket() {
         };
         ws.onmessage = handleMessages;
         ws.onpong = () => {
-            console.log('Received pong from client');
+            console.log('Received pong from server');
         };
     } catch (error) {
         console.error('Failed to initialize WebSocket:', error);
@@ -114,6 +125,7 @@ function resetToPhoneScreen() {
     isAdmin = false;
     isAdsFetched = false;
     reconnectAttempts = 0;
+    joinErrorAttempts = 0;
     hideConnectionLost();
 }
 
@@ -166,6 +178,7 @@ function handleMessages(event) {
         updateTeams(data.teams);
         updateBuzzer(data.buzzer);
         if (!isAdsFetched) fetchAnnouncements();
+        joinErrorAttempts = 0; // إعادة ضبط محاولات joinError
     } else if (type === 'codesGenerated') {
         const generatedCodesDiv = document.getElementById('generatedCodes');
         generatedCodesDiv.innerHTML = 'الرموز الجديدة:<br>' + data.join('<br>');
@@ -301,11 +314,27 @@ function handleMessages(event) {
     } else if (type === 'updateQuestions') {
         defaultQuestions.session = data;
     } else if (type === 'joinError') {
-        document.getElementById('welcomeScreen').classList.add('active');
-        document.getElementById('hostScreen').classList.remove('active');
-        document.getElementById('contestantScreen').classList.remove('active');
-        document.getElementById('welcomeError').innerText = data;
-        document.getElementById('welcomeError').className = 'error-message';
+        if (isHost && data.includes('يوجد مضيف بالفعل') && joinErrorAttempts < maxJoinErrorAttempts) {
+            joinErrorAttempts++;
+            console.log(`Join error attempt ${joinErrorAttempts}`);
+            setTimeout(() => {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    if (token) {
+                        ws.send(JSON.stringify({ type: 'reconnect', data: { token } }));
+                    } else if (phoneNumber && playerName) {
+                        ws.send(JSON.stringify({ type: 'join', data: { role: 'host', name: playerName, phoneNumber } }));
+                    }
+                }
+            }, 2000);
+            showToast('يوجد مضيف بالفعل، جاري إعادة المحاولة...', 'warning');
+        } else {
+            document.getElementById('welcomeScreen').classList.add('active');
+            document.getElementById('hostScreen').classList.remove('active');
+            document.getElementById('contestantScreen').classList.remove('active');
+            document.getElementById('welcomeError').innerText = data;
+            document.getElementById('welcomeError').className = 'error-message';
+            joinErrorAttempts = 0;
+        }
     } else if (type === 'error') {
         if (data.includes('رمز مؤقت غير صالح') || data.includes('الجلسة غير موجودة')) {
             resetToPhoneScreen();
