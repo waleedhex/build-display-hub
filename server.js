@@ -577,7 +577,7 @@ wss.on('connection', (ws) => {
                     if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                         const session = sessions.get(ws.sessionId);
                         const token = await generateToken(ws.sessionId, 'display', 'display');
-                        const displayUrl = `https://hroof-198afbda9986.herokuapp.com/display.html?sessionId=${ws.sessionId}&token=${token}`;
+                        const displayUrl = `https://newhexgame-908a222ee9ad.herokuapp.com/display.html?sessionId=${ws.sessionId}&token=${token}`;
                         ws.send(JSON.stringify({ type: 'displayLink', data: { url: displayUrl } }));
                     }
                     break;
