@@ -42,7 +42,7 @@ const colorSets = [
 async function initDatabase() {
     try {
         await db.connect();
-        console.log('Connected to PostgreSQL database');
+        console.log('تم الاتصال بقاعدة بيانات PostgreSQL');
         await Promise.all([
             db.query(`
                 CREATE TABLE IF NOT EXISTS subscribers (
@@ -114,7 +114,7 @@ async function initDatabase() {
             )
         `);
         if (invalidCodes.rows.length > 0) {
-            console.warn('Invalid codes found:', invalidCodes.rows);
+            console.warn('تم العثور على رموز غير صالحة:', invalidCodes.rows);
         }
 
         await db.query(`
@@ -131,7 +131,7 @@ async function initDatabase() {
         if (adminCheck.rows.length === 0) {
             const adminCode = process.env.ADMIN_CODE || 'IMWRA143';
             await db.query('INSERT INTO subscribers (code, is_admin) VALUES ($1, $2) ON CONFLICT (code) DO NOTHING', [adminCode, true]);
-            console.log(`Admin code ${adminCode} added to subscribers`);
+            console.log(`تمت إضافة رمز المسؤول ${adminCode} إلى المشتركين`);
         }
 
         const questionsExist = await db.query('SELECT COUNT(*) FROM general_questions');
@@ -151,7 +151,7 @@ async function initDatabase() {
                         }
                     }
                     await client.query('COMMIT');
-                    console.log('Initial general questions loaded from questions.json');
+                    console.log('تم تحميل الأسئلة العامة الأولية من questions.json');
                 } catch (err) {
                     await client.query('ROLLBACK');
                     throw err;
@@ -159,13 +159,13 @@ async function initDatabase() {
                     client.release();
                 }
             } catch (err) {
-                console.error('Error loading initial questions:', err);
+                console.error('خطأ في تحميل الأسئلة الأولية:', err);
             }
         }
 
-        console.log('Database tables initialized');
+        console.log('تم تهيئة جداول قاعدة البيانات');
     } catch (err) {
-        console.error('Database initialization error:', err);
+        console.error('خطأ في تهيئة قاعدة البيانات:', err);
     }
 }
 
@@ -187,7 +187,7 @@ async function loadQuestions(sessionId = null, useGeneral = true) {
         });
         return questions;
     } catch (error) {
-        console.error('Error loading questions:', error);
+        console.error('خطأ في تحميل الأسئلة:', error);
         return {};
     }
 }
@@ -199,7 +199,7 @@ async function saveSession(sessionId, sessionData) {
             [sessionId, JSON.stringify(sessionData)]
         );
     } catch (err) {
-        console.error('Error saving session:', err);
+        console.error('خطأ في حفظ الجلسة:', err);
     }
 }
 
@@ -208,7 +208,7 @@ async function loadSession(sessionId) {
         const result = await db.query('SELECT data FROM sessions WHERE session_id = $1', [sessionId]);
         return result.rows.length > 0 ? JSON.parse(result.rows[0].data) : null;
     } catch (err) {
-        console.error('Error loading session:', err);
+        console.error('خطأ في تحميل الجلسة:', err);
         return null;
     }
 }
@@ -230,14 +230,14 @@ async function verifyToken(token) {
             [token]
         );
         if (result.rows.length > 0) {
-            console.log('Token verified successfully:', token);
+            console.log('تم التحقق من الرمز بنجاح:', token);
             return result.rows[0];
         } else {
-            console.log('Token invalid or expired:', token);
+            console.log('الرمز غير صالح أو منتهي الصلاحية:', token);
             return null;
         }
     } catch (err) {
-        console.error('Error verifying token:', err);
+        console.error('خطأ في التحقق من الرمز:', err);
         return null;
     }
 }
@@ -253,7 +253,7 @@ async function cleanupSessions() {
                 }
             });
             await db.query(
-                'DELETE FROM sessions WHERE last_activity < NOW() - INTERVAL \'5 minutes\' AND session_id NOT IN ($1)',
+                'DELETE FROM sessions WHERE last_activity < NOW() - INTERVAL \'5 minutes\' AND session_id NOT IN (SELECT UNNEST($1::text[]))', // استخدام UNNEST لتمرير مصفوفة
                 [Array.from(activeSessions)]
             );
             await db.query(
@@ -266,9 +266,9 @@ async function cleanupSessions() {
                     }
                 });
             });
-            console.log('Sessions and tokens cleaned up');
+            console.log('تم تنظيف الجلسات والرموز');
         } catch (err) {
-            console.error('Error cleaning up sessions:', err);
+            console.error('خطأ في تنظيف الجلسات:', err);
         }
     }, 2 * 60 * 1000);
 }
@@ -367,32 +367,34 @@ function broadcast(sessionId, data, excludeClient) {
     });
 }
 
+// ✅ ping/pong مع isAlive
 function startPingPong() {
     setInterval(() => {
-        clients.forEach((client, clientId) => {
-            client.pingAttempts = client.pingAttempts || 0;
-            if (client.ws.readyState === WebSocket.OPEN) {
-                client.ws.ping();
-                client.pingAttempts++;
-                if (client.pingAttempts > 3) {
-                    console.log(`Client ${clientId} failed 3 ping attempts, disconnecting`);
-                    handleClientDisconnect(client);
-                    clients.delete(clientId);
-                } else {
-                    // تحديث last_activity للجلسة
-                    const session = sessions.get(client.sessionId);
-                    if (session) {
-                        session.lastActivity = Date.now();
-                        saveSession(client.sessionId, session);
-                    }
-                }
+        wss.clients.forEach(ws => {
+            // تحقق إذا كان العميل لا يستجيب
+            if (ws.isAlive === false) {
+                console.log('⛔ عميل لا يستجيب، سيتم إنهاء الاتصال');
+                ws.terminate();
             } else {
-                console.log(`Client ${clientId} not open, disconnecting`);
-                handleClientDisconnect(client);
+                // تعيين isAlive إلى true قبل إرسال ping
+                ws.isAlive = true;
+                ws.ping();
+            }
+        });
+    }, 10000); // كل 10 ثوانٍ
+}
+
+// ✅ تنظيف العملاء غير النشطين
+function cleanupClients() {
+    setInterval(() => {
+        clients.forEach((client, clientId) => {
+            // التحقق مما إذا كان العميل لا يزال متصلاً
+            if (!client.ws || client.ws.readyState !== WebSocket.OPEN) {
+                console.log(`🧹 حذف عميل غير نشط: ${clientId}`);
                 clients.delete(clientId);
             }
         });
-    }, 5000);
+    }, 60000); // كل دقيقة
 }
 
 async function handleClientDisconnect(client) {
@@ -436,26 +438,31 @@ async function handleClientDisconnect(client) {
 }
 
 wss.on('connection', (ws) => {
-    console.log('New WebSocket connection established');
+    console.log('تم إنشاء اتصال WebSocket جديد');
     const clientId = uuidv4();
     ws.clientId = clientId;
+
+    // 🧠 تفعيل isAlive عند الاتصال
+    ws.isAlive = true;
+
+    // تحديث isAlive عند تلقي pong
+    ws.on('pong', () => {
+        console.log('تم استلام pong من العميل');
+        ws.isAlive = true;
+    });
 
     db.query('SELECT id, title, text, link, button_text FROM Announcements WHERE is_active = TRUE')
         .then(result => {
             ws.send(JSON.stringify({ type: 'activeAnnouncements', data: result.rows }));
         })
-        .catch(err => console.error('Error fetching active Announcements:', err));
-
-    ws.on('pong', () => {
-        console.log('Received pong from client');
-        const client = clients.get(clientId);
-        if (client) client.pingAttempts = 0;
-    });
+        .catch(err => console.error('خطأ في جلب الإعلانات النشطة:', err));
 
     ws.on('message', async (message) => {
         try {
-            console.log('Received WebSocket message:', message.toString());
+            console.log('تم استلام رسالة WebSocket:', message.toString());
             const { type, data } = JSON.parse(message);
+            // سجل تصحيح للرسالة المحللة
+            console.log('الرسالة المحللة:', { type, data });
             if (type === 'ping') {
                 ws.send(JSON.stringify({ type: 'pong' }));
                 return;
@@ -471,6 +478,7 @@ wss.on('connection', (ws) => {
                         const session = sessions.get(ws.sessionId) || await loadSession(ws.sessionId);
                         if (session) {
                             const client = { ws, role, name: ws.playerName, sessionId: ws.sessionId, clientId };
+                            const existingHost = Array.from(clients.values()).find(c => c.sessionId === ws.sessionId && c.role === 'host' && c.ws.readyState === WebSocket.OPEN);
                             if (role === 'display') {
                                 if (session.displayConnected) {
                                     return;
@@ -480,7 +488,6 @@ wss.on('connection', (ws) => {
                                 clients.set(clientId, client);
                                 ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {} } }));
                             } else if (role === 'host') {
-                                const existingHost = Array.from(clients.values()).find(c => c.sessionId === ws.sessionId && c.role === 'host' && c.ws.readyState === WebSocket.OPEN);
                                 if (existingHost) {
                                     ws.send(JSON.stringify({ type: 'joinError', data: 'يوجد مضيف بالفعل في هذه الجلسة!' }));
                                     clients.delete(clientId);
@@ -504,36 +511,81 @@ wss.on('connection', (ws) => {
                             ws.send(JSON.stringify({ type: 'error', data: 'الجلسة غير موجودة' }));
                         }
                     } else {
-                        ws.send(JSON.stringify({ type: 'error', data: 'رمز مؤقت غير صالح، أدخل رمز جلسة' }));
+                        // إذا كان التوكن غير صالح، تحقق من رمز الجلسة
+                        // يجب أن يكون ws.sessionId متاحًا من عملية verifyPhone السابقة
+                        // أو يجب أن يكون phoneNumber متاحًا لإعادة التحقق
+                        // هنا نفترض أن sessionId هو رمز الجلسة الفعلي الذي تم استخدامه
+                        // إذا كان `data.token` هو التوكن الوحيد المتاح هنا، فإن sessionId غير معروف بشكل مباشر
+                        // لذا، يجب أن نقوم بتحميل معلومات التوكن من قاعدة البيانات للحصول على sessionId
+                        // ولكن بما أن دالة verifyToken أعلاه ترجع null في حالة التوكن غير الصالح
+                        // يمكننا إعادة استخدام ws.sessionId إذا كان قد تم تعيينه مسبقًا في الاتصال
+                        // أو نطلب من العميل إعادة إدخال phoneNumber
+                        // لغرض هذا التعديل، سنفترض أن `ws.sessionId` قد تم تعيينه من `verifyPhone` عند الاتصال الأصلي
+                        const storedSessionId = ws.sessionId;
+                        if (storedSessionId) {
+                            const sessionExists = await db.query('SELECT code FROM subscribers WHERE code = $1', [storedSessionId]);
+                            if (sessionExists.rows.length > 0) {
+                                // توليد توكن جديد إذا كان رمز الجلسة صالحًا
+                                // نحتاج إلى اسم اللاعب والدور لإعادة توليد التوكن
+                                // هنا، لا نمتلك اسم اللاعب أو الدور بعد انتهاء صلاحية التوكن القديم
+                                // لذا، يجب أن يرسل العميل طلب verifyPhone مرة أخرى
+                                // بدلاً من محاولة توليد توكن جديد بدون معلومات كافية، نعيد توجيه العميل لشاشة الهاتف
+                                ws.send(JSON.stringify({ type: 'error', data: 'انتهت صلاحية الجلسة، يرجى إدخال رمز جديد' }));
+                            } else {
+                                ws.send(JSON.stringify({ type: 'error', data: 'رمز مؤقت غير صالح، أدخل رمز جلسة' }));
+                            }
+                        } else {
+                             ws.send(JSON.stringify({ type: 'error', data: 'رمز مؤقت غير صالح، أدخل رمز جلسة' }));
+                        }
                     }
                     break;
 
                 case 'verifyPhone':
                     const inputCode = data.phoneNumber.toUpperCase();
-                    const result = await db.query('SELECT code, is_admin FROM subscribers WHERE code = $1', [inputCode]);
-                    if (result.rows.length > 0) {
-                        ws.sessionId = inputCode;
-                        let session = sessions.get(ws.sessionId) || await loadSession(ws.sessionId);
-                        if (!session) {
-                            session = {
-                                hexagons: {},
-                                lettersOrder: ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'],
-                                teams: { red: [], green: [] },
-                                buzzer: { active: false, player: '', team: null },
-                                buzzerLock: false,
-                                colorSetIndex: 0,
-                                isSwapped: false,
-                                partyMode: false,
-                                questions: { general: await loadQuestions(null, true), session: await loadQuestions(ws.sessionId, false) },
-                                lastActivity: Date.now(),
-                                displayConnected: false
-                            };
-                            sessions.set(ws.sessionId, session);
-                            await saveSession(ws.sessionId, session);
+                    const isInviteLink = data.isInviteLink || false;
+                    const createdAt = data.createdAt ? parseInt(data.createdAt) : null;
+                    try {
+                        const result = await db.query('SELECT code, is_admin FROM subscribers WHERE code = $1', [inputCode]);
+                        if (result.rows.length > 0) {
+                            if (isInviteLink) {
+                                if (!createdAt) {
+                                    ws.send(JSON.stringify({ type: 'codeError', data: 'رابط الدعوة غير صالح' }));
+                                    break;
+                                }
+                                // التحقق من صلاحية الرابط (4 ساعات)
+                                const now = Date.now();
+                                const hoursDifference = (now - createdAt) / (1000 * 60 * 60); // الفرق بالساعات
+                                if (hoursDifference > 4) {
+                                    ws.send(JSON.stringify({ type: 'codeError', data: 'رابط الدعوة منتهي الصلاحية' }));
+                                    break;
+                                }
+                            }
+                            ws.sessionId = inputCode;
+                            let session = sessions.get(ws.sessionId) || await loadSession(ws.sessionId);
+                            if (!session) {
+                                session = {
+                                    hexagons: {},
+                                    lettersOrder: ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'],
+                                    teams: { red: [], green: [] },
+                                    buzzer: { active: false, player: '', team: null },
+                                    buzzerLock: false,
+                                    colorSetIndex: 0,
+                                    isSwapped: false,
+                                    partyMode: false,
+                                    questions: { general: await loadQuestions(null, true), session: await loadQuestions(ws.sessionId, false) },
+                                    lastActivity: Date.now(),
+                                    displayConnected: false
+                                };
+                                sessions.set(ws.sessionId, session);
+                                await saveSession(ws.sessionId, session);
+                            }
+                            ws.send(JSON.stringify({ type: 'codeVerified' }));
+                        } else {
+                            ws.send(JSON.stringify({ type: 'codeError', data: 'الرمز غير صحيح' }));
                         }
-                        ws.send(JSON.stringify({ type: 'codeVerified' }));
-                    } else {
-                        ws.send(JSON.stringify({ type: 'codeError', data: 'الرمز غير صحيح' }));
+                    } catch (err) {
+                        console.error('خطأ في التحقق من الهاتف:', err);
+                        ws.send(JSON.stringify({ type: 'codeError', data: 'خطأ في التحقق من الرمز' }));
                     }
                     break;
 
@@ -573,12 +625,37 @@ wss.on('connection', (ws) => {
                     }
                     break;
 
+                case 'saveSession': // معالجة حفظ الجلسة
+                    if (ws.sessionId && clients.get(clientId)?.role === 'host') {
+                        const session = sessions.get(ws.sessionId);
+                        Object.assign(session, data.sessionData); // تحديث الجلسة بالبيانات الجديدة
+                        session.lastActivity = Date.now();
+                        await saveSession(ws.sessionId, session);
+                        ws.send(JSON.stringify({ type: 'sessionSaved', data: 'تم حفظ الجلسة بنجاح' }));
+                    }
+                    break;
+
                 case 'generateDisplayLink':
                     if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                         const session = sessions.get(ws.sessionId);
                         const token = await generateToken(ws.sessionId, 'display', 'display');
-                        const displayUrl = `https://newhexgame-908a222ee9ad.herokuapp.com/display.html?sessionId=${ws.sessionId}&token=${token}`;
+                        const displayUrl = `https://hroof-198afbda9986.herokuapp.com/display.html?sessionId=${ws.sessionId}&token=${token}`;
                         ws.send(JSON.stringify({ type: 'displayLink', data: { url: displayUrl } }));
+                    }
+                    break;
+
+                case 'generateInviteLink':
+                    if (ws.sessionId && clients.get(clientId)?.role === 'host') {
+                        try {
+                            const createdAt = Date.now(); // طابع زمني بالمللي ثانية
+                            const inviteUrl = `https://hroof-198afbda9986.herokuapp.com/?sessionCode=${ws.sessionId}&createdAt=${createdAt}`;
+                            ws.send(JSON.stringify({ type: 'inviteLink', data: { url: inviteUrl } }));
+                        } catch (err) {
+                            console.error('خطأ في إنشاء رابط الدعوة:', err);
+                            ws.send(JSON.stringify({ type: 'error', data: 'خطأ في إنشاء رابط الدعوة' }));
+                        }
+                    } else {
+                        ws.send(JSON.stringify({ type: 'error', data: 'غير مصرح لك بإنشاء رابط دعوة' }));
                     }
                     break;
 
@@ -686,13 +763,24 @@ wss.on('connection', (ws) => {
                         const session = sessions.get(ws.sessionId);
                         if (!session.questions.session[data.letter]) session.questions.session[data.letter] = [];
                         session.questions.session[data.letter].push([data.question, data.answer]);
-                        await db.query(
-                            'INSERT INTO session_questions (session_code, letter, question, answer) VALUES ($1, $2, $3, $4)',
-                            [ws.sessionId, data.letter, data.question, data.answer]
-                        );
-                        session.lastActivity = Date.now();
-                        await saveSession(ws.sessionId, session);
-                        broadcast(ws.sessionId, { type: 'updateQuestions', data: session.questions.session }, null);
+                        try {
+                            console.log('إضافة سؤال الجلسة:', { sessionId: ws.sessionId, letter: data.letter, question: data.question, answer: data.answer });
+                            await db.query(
+                                'INSERT INTO session_questions (session_code, letter, question, answer) VALUES ($1, $2, $3, $4)',
+                                [ws.sessionId, data.letter, data.question, data.answer]
+                            );
+                            session.lastActivity = Date.now();
+                            await saveSession(ws.sessionId, session);
+                            broadcast(ws.sessionId, { type: 'updateQuestions', data: session.questions.session }, null);
+                            ws.send(JSON.stringify({ type: 'questionAdded', data: 'تم إضافة السؤال بنجاح' }));
+                        }
+                        catch (err) {
+                            console.error('خطأ في إضافة سؤال الجلسة:', err);
+                            ws.send(JSON.stringify({ type: 'error', data: 'خطأ في إضافة السؤال: ' + err.message }));
+                        }
+                    } else {
+                        console.warn('محاولة إضافة سؤال غير مصرح بها:', { sessionId: ws.sessionId, clientRole: clients.get(clientId)?.role });
+                        ws.send(JSON.stringify({ type: 'error', data: 'غير مصرح لك بإضافة سؤال' }));
                     }
                     break;
 
@@ -1014,7 +1102,7 @@ wss.on('connection', (ws) => {
                             const sheet = workbook.Sheets[sheetName];
                             const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                             if (jsonData.length <= 1) {
-                                ws.send(JSON.stringify({ type: 'adminError', data: 'الملف فاضي أو لا يحتوي على رموز' }));
+                                ws.send(JSON.stringify({ type: 'adminError', data: 'الملف فارغ أو لا يحتوي على رموز' }));
                                 return;
                             }
                             const codes = jsonData.slice(1).map(row => row[0]?.toString().toUpperCase()).filter(code => code);
@@ -1053,13 +1141,13 @@ wss.on('connection', (ws) => {
                     break;
             }
         } catch (err) {
-            console.error('Error processing message:', err);
+            console.error('خطأ في معالجة الرسالة:', err);
             ws.send(JSON.stringify({ type: 'error', data: 'خطأ في معالجة الطلب' }));
         }
     });
 
     ws.on('close', () => {
-        console.log('WebSocket connection closed');
+        console.log('تم إغلاق اتصال WebSocket');
         const client = clients.get(clientId);
         if (client) {
             handleClientDisconnect(client);
@@ -1068,8 +1156,10 @@ wss.on('connection', (ws) => {
 });
 
 server.listen(port, async () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`الخادم يعمل على المنفذ ${port}`);
     await initDatabase();
+    // تشغيل الميزات الجديدة
     startPingPong();
-    cleanupSessions();
+    cleanupClients();
+    cleanupSessions(); // هذه موجودة بالفعل، تأكد من استمرارها
 });

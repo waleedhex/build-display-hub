@@ -177,6 +177,7 @@ body {
     margin-bottom: 1vw;
 }
 
+/* Adjusted font size for Font Awesome icons */
 .icon-btn {
     width: 5vw;
     height: 5vw;
@@ -191,7 +192,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 2vw;
+    font-size: 1.5vw; /* Smaller size for Font Awesome icons */
     cursor: pointer;
     transition: transform 0.3s, background-color 0.3s;
 }
@@ -201,8 +202,19 @@ body {
     transform: scale(1.1);
 }
 
+/* Adjusted font size for party button (fa-star) */
 .party-btn {
-    font-size: 2.5vw;
+    font-size: 1.8vw; /* Size for fa-star icon */
+}
+
+/* Styles for the save button */
+.save-btn {
+    background-color: #ffc107; /* Yellow color */
+    font-size: 1.5vw; /* Same size as other icons */
+}
+
+.save-btn:hover {
+    background-color: #ffa000; /* Darker yellow color */
 }
 
 input, select, textarea {
@@ -276,6 +288,7 @@ button {
     cursor: not-allowed;
 }
 
+/* Updated question-section styles to support the toggle switch */
 .question-section {
     margin: 10px 0;
     padding: 10px;
@@ -287,13 +300,29 @@ button {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    justify-content: center;
+    /* Removed justify-content: center to allow toggle-container to manage alignment */
     margin-top: 10px;
+    align-items: center; /* Align items vertically */
 }
 
 .question-section input, .question-section select, .question-section button {
     flex: 1;
     min-width: 120px;
+}
+
+.question-section .toggle-switch {
+    flex: 0 0 auto; /* Prevent toggle switch from growing/shrinking */
+    margin: 5px;
+}
+
+.question-section .toggle-label {
+    flex: 0 0 auto; /* Prevent toggle label from growing/shrinking */
+    margin: 5px;
+}
+
+/* CSS to ensure nextQuestionButton is clickable */
+#nextQuestionButton {
+    pointer-events: auto; /* إضافة صراحة لتجنب التعطيل */
 }
 
 .buzzer-info {
@@ -359,7 +388,7 @@ button {
     display: inline-block;
     width: 40px;
     height: 20px;
-    margin: 0 10px;
+    margin: 0 10px; /* Removed margin-right: auto */
 }
 
 .toggle-switch input {
@@ -401,7 +430,7 @@ input:checked + .slider:before {
 }
 
 .toggle-label {
-    color: #fff;
+    color: #000;
     font-size: 14px;
     margin-left: 5px;
 }
@@ -491,6 +520,20 @@ input:checked + .slider:before {
 }
 
 #announcementsContainer.hidden {
+    display: none;
+}
+
+/* New styles for welcomeAnnouncementsContainer */
+#welcomeAnnouncementsContainer {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px 0;
+}
+
+#welcomeAnnouncementsContainer.hidden {
     display: none;
 }
 
@@ -690,6 +733,127 @@ input:checked + .slider:before {
     opacity: 1;
 }
 
+.share-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.share-modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    position: relative;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    color: #333;
+}
+
+.share-modal-content p {
+    margin: 0 0 15px;
+    font-size: 16px;
+}
+
+/* Updated to include #inviteQrCode */
+#qrCode, #inviteQrCode {
+    margin: 0 auto 15px;
+    width: 150px;
+    height: 150px;
+}
+
+.share-link-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Updated to include #inviteLink */
+#shareLink, #inviteLink {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    background: #f5f5f5;
+}
+
+/* Updated to include #copyInviteLinkButton, #shareInviteLinkButton */
+#copyLinkButton, #copyInviteLinkButton, #shareInviteLinkButton {
+    background: #007bff;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+/* Updated to include #copyInviteLinkButton:hover, #shareInviteLinkButton:hover */
+#copyLinkButton:hover, #copyInviteLinkButton:hover, #shareInviteLinkButton:hover {
+    background: #0056b3;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+}
+
+.modal-close:hover {
+    color: #dc3545;
+}
+
+.loading-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100vh;
+    background: #4b0082;
+    color: #fff;
+}
+
+.loading-screen.active {
+    display: flex;
+}
+
+/* أنماط لـ installModal */
+#installModal .share-modal-content {
+    max-width: 500px;
+}
+
+#installInstructions {
+    font-size: 20px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+#installButton {
+    background: #007bff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#installButton:hover {
+    background: #0056b3;
+}
+
+
 @media (max-width: 767px) {
     .sliders-container {
         display: none;
@@ -729,22 +893,33 @@ input:checked + .slider:before {
         margin-bottom: 1vw;
     }
 
+    /* Adjusted for small screens */
     .question-section {
         margin-top: 10px;
+        flex-direction: column; /* Changed to column for small screens */
     }
 
     .players-container {
         margin-top: 10px;
     }
 
+    /* Adjusted Font Awesome icon size for small screens */
     .icon-btn {
         width: 8vw;
         height: 8vw;
-        font-size: 3vw;
+        font-size: 2.5vw; /* Smaller Font Awesome icon size on small screens */
     }
 
+    /* Adjusted party button size for small screens */
     .party-btn {
-        font-size: 3.5vw;
+        font-size: 3vw; /* Larger party icon size on small screens */
+    }
+
+    /* Adjusted save button size for small screens */
+    .save-btn {
+        width: 8vw;
+        height: 8vw;
+        font-size: 2.5vw;
     }
 
     .party-text {
@@ -839,80 +1014,50 @@ input:checked + .slider:before {
     .announcement-close-btn {
         font-size: 14px;
     }
+
+    /* Added flex-direction to share-link-container for small screens */
+    .share-link-container {
+        flex-direction: column;
+    }
+
+    /* Added width and margin-bottom for share/invite links on small screens */
+    #shareLink, #inviteLink {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    /* أنماط لـ installModal في الشاشات الصغيرة */
+    #installModal .share-modal-content {
+        max-width: 80%;
+    }
+
+    #installInstructions {
+        font-size: 20px;
+    }
+
+    #installButton {
+        font-size: 14px;
+        padding: 8px 16px;
+    }
 }
 
-.share-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
-}
-
-.share-modal-content {
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    position: relative;
-    max-width: 400px;
-    width: 90%;
-    text-align: center;
-    color: #333;
-}
-
-.share-modal-content p {
-    margin: 0 0 15px;
-    font-size: 16px;
-}
-
-#qrCode {
-    margin: 0 auto 15px;
-    width: 150px;
-    height: 150px;
-}
-
-.share-link-container {
+.toggle-container {
     display: flex;
-    gap: 10px;
-    justify-content: center;
     align-items: center;
+    gap: 5px;
+    margin-left: auto; /* إزاحة إلى اليمين */
+    flex-wrap: nowrap; /* المفتاح والنص في نفس السطر */
 }
 
-#shareLink {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid #ccc;
+#currentQuestion {
+    min-height: 3em; /* أدنى ارتفاع لثلاثة أسطر تقريبًا */
+    width: 80%;
+    margin: 10px auto;
+    text-align: center;
+    background: #fff;
     border-radius: 5px;
-    font-size: 14px;
-    background: #f5f5f5;
-}
-
-#copyLinkButton {
-    background: #007bff;
-    color: #fff;
-    border: none;
-    padding: 8px 16px;
-    font-size: 14px;
-}
-
-#copyLinkButton:hover {
-    background: #0056b3;
-}
-
-.modal-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 24px;
-    cursor: pointer;
-    color: #333;
-}
-
-.modal-close:hover {
-    color: #dc3545;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: #000;
+    font-size: 16px;
 }

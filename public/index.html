@@ -3,18 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الحروف السداسية</title>
+    <title>لعبة الحروف</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <script>
+        // إخفاء phoneScreen إذا وُجد sessionCode بعد تحميل DOM
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sessionCode = urlParams.get('sessionCode');
+            const phoneScreen = document.getElementById('phoneScreen');
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (phoneScreen && loadingScreen) {
+                if (sessionCode) {
+                    phoneScreen.classList.remove('active');
+                    loadingScreen.classList.add('active');
+                } else {
+                    phoneScreen.classList.add('active');
+                    loadingScreen.classList.remove('active');
+                }
+            }
+        });
+    </script>
 </head>
 <body>
+    <div id="offlineMessage" style="display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: #dc3545; color: #fff; padding: 10px; border-radius: 5px;">
+        أنت غير متصل بالإنترنت. بعض الوظائف قد لا تعمل.
+    </div>
     <div class="container">
-        <div class="phone-screen active" id="phoneScreen">
+        <div id="loadingScreen" class="loading-screen" style="display: none;">
+            <div class="spinner"></div>
+            <p>جاري التحميل...</p>
+        </div>
+        <div class="phone-screen" id="phoneScreen">
             <h2>أدخل رمز الجلسة</h2>
             <input type="text" id="phoneNumber" placeholder="مثال: X7K9P2">
             <button id="submitPhoneButton">تأكيد</button>
             <div id="announcementsContainer"></div>
+            <div id="connectionLost" class="connection-lost" style="display: none;">
+                <div class="spinner"></div>
+                <p>جاري إعادة الاتصال...</p>
+                <button id="connectionLostButton" onclick="resetToPhoneScreen()" style="display: none;">العودة للجلسة</button>
+            </div>
             <p id="phoneError" class="error-message"></p>
         </div>
 
@@ -26,6 +61,7 @@
                 <button id="contestantButton">متسابق</button>
             </div>
             <p id="welcomeError" class="error-message"></p>
+            <div id="welcomeAnnouncementsContainer"></div>
             <div id="adminPanel" style="display: none; margin-top: 20px;">
                 <h3>إدارة الرموز</h3>
                 <p id="codesCount" class="stats">إجمالي عدد الرموز: 0</p>
@@ -114,17 +150,13 @@
                 <div class="party-text" id="partyText">مبروك</div>
             </div>
             <div class="icon-container">
-                <button id="shuffleButton" class="icon-btn" title="خلط الحروف"><i class="fas fa-random"></i></button>
-                <button id="swapColorsButton" class="icon-btn" title="عكس الحدود"><i class="fas fa-exchange-alt"></i></button>
+                <button id="shuffleButton" class="icon-btn" title="خلط"><i class="fas fa-random"></i></button>
+                <button id="swapColorsButton" class="icon-btn" title="عكس الألوان"><i class="fas fa-exchange-alt"></i></button>
                 <button id="changeColorsButton" class="icon-btn" title="تغيير الألوان"><i class="fas fa-palette"></i></button>
-                <button id="partyButton" class="icon-btn party-btn" title="بارتي">🎉</button>
-                <button id="resetBuzzerButton" class="icon-btn" title="إعادة تعيين الجرس"><i class="fas fa-bell"></i></button>
-                <button id="shareButton" class="icon-btn" title="مشاركة الجلسة"><i class="fas fa-share-alt"></i></button>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggleQuestions" checked>
-                    <span class="slider"></span>
-                </label>
-                <span class="toggle-label">استخدام الأسئلة العامة</span>
+                <button id="partyButton" class="icon-btn party-btn" title="وضع الحفلة"><i class="fas fa-star"></i></button>
+                <button id="shareButton" class="icon-btn" title="رابط العرض"><i class="fas fa-tv"></i></button>
+                <button id="inviteFriendsButton" class="icon-btn" title="دعوة الأصدقاء"><i class="fas fa-user-friends"></i></button>
+                <button id="saveButton" class="icon-btn save-btn" title="تثبيت التطبيق"><i class="fas fa-download"></i></button>
             </div>
             <div class="sliders-container">
                 <label for="sizeSlider" style="color: #fff; font-size: 14px;">حجم اللوحة</label>
@@ -135,6 +167,13 @@
             <div class="question-section">
                 <p id="currentQuestion" style="flex: 100%; margin: 0;"></p>
                 <button id="nextQuestionButton">السؤال التالي</button>
+                <div class="toggle-container">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleQuestions" checked>
+                        <span class="slider"></span>
+                    </label>
+                    <label class="toggle-label">استخدام الأسئلة العامة</label>
+                </div>
                 <input type="text" id="newQuestionInput" placeholder="أدخل السؤال">
                 <input type="text" id="newAnswerInput" placeholder="أدخل الإجابة">
                 <select id="questionLetter">
@@ -173,6 +212,24 @@
                     <input type="text" id="shareLink" readonly>
                     <button id="copyLinkButton">نسخ الرابط</button>
                 </div>
+            </div>
+        </div>
+        <div id="inviteModal" class="share-modal">
+            <div class="share-modal-content">
+                <span id="closeInviteModal" class="modal-close">×</span>
+                <p>انسخ رابط الدعوة أو شاركه مع الأصدقاء</p>
+                <div id="inviteQrCode"></div>
+                <div class="share-link-container">
+                    <input type="text" id="inviteLink" readonly>
+                    <button id="copyInviteLinkButton">نسخ الرابط</button>
+                    <button id="shareInviteLinkButton">مشاركة</button>
+                </div>
+            </div>
+        </div>
+        <div id="installModal" class="share-modal" style="display: none;">
+            <div class="share-modal-content">
+                <span id="closeInstallModal" class="modal-close">×</span>
+                <p id="installInstructions"></p>
             </div>
         </div>
     </div>
