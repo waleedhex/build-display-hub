@@ -639,7 +639,7 @@ wss.on('connection', (ws) => {
                     if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                         const session = sessions.get(ws.sessionId);
                         const token = await generateToken(ws.sessionId, 'display', 'display');
-                        const displayUrl = `https://hroof-198afbda9986.herokuapp.com/display.html?sessionId=${ws.sessionId}&token=${token}`;
+                        const displayUrl = `https://newhexgame-908a222ee9ad.herokuapp.com/display.html?sessionId=${ws.sessionId}&token=${token}`;
                         ws.send(JSON.stringify({ type: 'displayLink', data: { url: displayUrl } }));
                     }
                     break;
@@ -648,7 +648,7 @@ wss.on('connection', (ws) => {
                     if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                         try {
                             const createdAt = Date.now(); // طابع زمني بالمللي ثانية
-                            const inviteUrl = `https://hroof-198afbda9986.herokuapp.com/?sessionCode=${ws.sessionId}&createdAt=${createdAt}`;
+                            const inviteUrl = `https://newhexgame-908a222ee9ad.herokuapp.com/?sessionCode=${ws.sessionId}&createdAt=${createdAt}`;
                             ws.send(JSON.stringify({ type: 'inviteLink', data: { url: inviteUrl } }));
                         } catch (err) {
                             console.error('خطأ في إنشاء رابط الدعوة:', err);
