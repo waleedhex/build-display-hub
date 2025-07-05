@@ -22,6 +22,20 @@ body {
     overflow: auto;
 }
 
+/* New styles for buzzer-active background colors */
+.container.buzzer-active-red {
+    background-color: #ff4081;
+    transition: background-color 0.3s ease-in-out;
+}
+.container.buzzer-active-green {
+    background-color: #81c784;
+    transition: background-color 0.3s ease-in-out;
+}
+.container.buzzer-reset {
+    background-color: #4b0082;
+    transition: background-color 0.3s ease-in-out;
+}
+
 .display-screen {
     display: none;
     flex-direction: column;
@@ -58,6 +72,17 @@ body {
     position: relative; /* ضروري لتموضع النص */
 }
 
+/* New styles for hexGridWrapper */
+.hexGridWrapper {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .row {
     display: flex;
     gap: calc(90vh / 100);
@@ -70,11 +95,11 @@ body {
 }
 
 #hexGridDisplay .row:nth-child(even) {
-    margin-right: calc(0.5 * (90vh / 7) + (90vh / 200));
+    margin-right: calc(-0.5 * (90vh / 7) - (90vh / 200));
 }
 
 #hexGridDisplay .row:nth-child(odd) {
-    margin-left: calc(0.5 * (90vh / 7) + (90vh / 200));
+    margin-left: calc(-0.5 * (90vh / 7) - (90vh / 200));
 }
 
 .hexagon {
@@ -198,6 +223,35 @@ body {
     100% { transform: translate(-50%, -50%) scale(1.2); }
 }
 
+/* New styles for golden-text */
+.golden-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 15;
+    display: none;
+    font-size: 10vh;
+    white-space: nowrap;
+    color: #ffffff;
+    text-shadow: 2px 2px 5px #ff4500;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 5px 10px;
+    border-radius: 5px;
+    animation: zoomPulse 1s ease-in-out infinite;
+    -webkit-text-stroke: 1px #000000;
+}
+
+@keyframes zoomPulse {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+    20% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1); }
+    80% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+}
+
 @keyframes flashAnimation {
     0% { opacity: 1; transform: scale(0); }
     50% { opacity: 0.8; }
@@ -222,11 +276,11 @@ body {
     }
 
     #hexGridDisplay .row:nth-child(even) {
-        margin-right: calc(0.5 * (90vh / 7) + (90vh / 200));
+        margin-right: calc(-0.5 * (90vh / 7) - (90vh / 200));
     }
 
     #hexGridDisplay .row:nth-child(odd) {
-        margin-left: calc(0.5 * (90vh / 7) + (90vh / 200));
+        margin-left: calc(-0.5 * (90vh / 7) - (90vh / 200));
     }
 
     #hexGridDisplay .row {
@@ -252,11 +306,11 @@ body {
     }
 
     #hexGridDisplay .row:nth-child(even) {
-        margin-right: calc(0.5 * (95vh / 7) + (95vh / 200));
+        margin-right: calc(-0.5 * (95vh / 7) - (95vh / 200));
     }
 
     #hexGridDisplay .row:nth-child(odd) {
-        margin-left: calc(0.5 * (95vh / 7) + (95vh / 200));
+        margin-left: calc(-0.5 * (95vh / 7) - (95vh / 200));
     }
 
     #hexGridDisplay .row {
@@ -284,11 +338,11 @@ body {
     }
 
     #hexGridDisplay .row:nth-child(even) {
-        margin-right: calc(0.5 * (95vh / 7) + (95vh / 200));
+        margin-right: calc(-0.5 * (95vh / 7) - (95vh / 200));
     }
 
     #hexGridDisplay .row:nth-child(odd) {
-        margin-left: calc(0.5 * (95vh / 7) + (95vh / 200));
+        margin-left: calc(-0.5 * (95vh / 7) - (95vh / 200));
     }
 
     #hexGridDisplay .row {
@@ -303,5 +357,16 @@ body {
     .party-text {
         font-size: 18vh;
         -webkit-text-stroke: 1.5px #000000;
+    }
+
+    /* Adjusted golden-text for smaller screens */
+    .golden-text {
+        font-size: 18vh;
+        -webkit-text-stroke: 1.5px #000000;
+        white-space: nowrap;
+        color: #ffffff;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding: 5px 10px;
+        border-radius: 5px;
     }
 }

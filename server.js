@@ -486,7 +486,7 @@ wss.on('connection', (ws) => {
                                 session.displayConnected = true;
                                 await saveSession(ws.sessionId, session);
                                 clients.set(clientId, client);
-                                ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {} } }));
+                                ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {}, goldenLetter: session.goldenLetter } }));
                             } else if (role === 'host') {
                                 if (existingHost) {
                                     ws.send(JSON.stringify({ type: 'joinError', data: 'يوجد مضيف بالفعل في هذه الجلسة!' }));
@@ -494,7 +494,7 @@ wss.on('connection', (ws) => {
                                     return;
                                 }
                                 clients.set(clientId, client);
-                                ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: session.questions } }));
+                                ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: session.questions, goldenLetter: session.goldenLetter } }));
                             } else {
                                 if (!session.teams.red.includes(ws.playerName) && !session.teams.green.includes(ws.playerName)) {
                                     const redCount = session.teams.red.length;
@@ -504,7 +504,7 @@ wss.on('connection', (ws) => {
                                     await saveSession(ws.sessionId, session);
                                 }
                                 clients.set(clientId, client);
-                                ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {} } }));
+                                ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {}, goldenLetter: session.goldenLetter } }));
                                 broadcast(ws.sessionId, { type: 'updateTeams', data: session.teams }, null);
                             }
                         } else {
@@ -566,6 +566,7 @@ wss.on('connection', (ws) => {
                                 session = {
                                     hexagons: {},
                                     lettersOrder: ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'],
+                                    goldenLetter: null, // إضافة الحرف الذهبي
                                     teams: { red: [], green: [] },
                                     buzzer: { active: false, player: '', team: null },
                                     buzzerLock: false,
@@ -604,7 +605,7 @@ wss.on('connection', (ws) => {
                             }
                             clients.set(clientId, client);
                             const token = await generateToken(ws.sessionId, name, role);
-                            ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: session.questions, token } }));
+                            ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: session.questions, token, goldenLetter: session.goldenLetter } }));
                         } else if (role === 'contestant') {
                             clients.set(clientId, client);
                             const redCount = session.teams.red.length;
@@ -614,7 +615,7 @@ wss.on('connection', (ws) => {
                                 session.teams[team].push(name);
                             }
                             const token = await generateToken(ws.sessionId, name, role);
-                            ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {}, token } }));
+                            ws.send(JSON.stringify({ type: 'init', data: { ...session, questions: {}, token, goldenLetter: session.goldenLetter } }));
                             await saveSession(ws.sessionId, session);
                             broadcast(ws.sessionId, { type: 'updateTeams', data: session.teams }, null);
                         }
@@ -639,7 +640,7 @@ wss.on('connection', (ws) => {
                     if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                         const session = sessions.get(ws.sessionId);
                         const token = await generateToken(ws.sessionId, 'display', 'display');
-                        const displayUrl = `https://newhexgame-908a222ee9ad.herokuapp.com/display.html?sessionId=${ws.sessionId}&token=${token}`;
+                        const displayUrl = `https://hroof-198afbda9986.herokuapp.com/display.html?sessionId=${ws.sessionId}&token=${token}`;
                         ws.send(JSON.stringify({ type: 'displayLink', data: { url: displayUrl } }));
                     }
                     break;
@@ -648,7 +649,7 @@ wss.on('connection', (ws) => {
                     if (ws.sessionId && clients.get(clientId)?.role === 'host') {
                         try {
                             const createdAt = Date.now(); // طابع زمني بالمللي ثانية
-                            const inviteUrl = `https://newhexgame-908a222ee9ad.herokuapp.com/?sessionCode=${ws.sessionId}&createdAt=${createdAt}`;
+                            const inviteUrl = `https://hroof-198afbda9986.herokuapp.com/?sessionCode=${ws.sessionId}&createdAt=${createdAt}`;
                             ws.send(JSON.stringify({ type: 'inviteLink', data: { url: inviteUrl } }));
                         } catch (err) {
                             console.error('خطأ في إنشاء رابط الدعوة:', err);
@@ -674,9 +675,10 @@ wss.on('connection', (ws) => {
                         const session = sessions.get(ws.sessionId);
                         session.lettersOrder = data.lettersOrder;
                         session.hexagons = data.hexagons;
+                        session.goldenLetter = data.goldenLetter; // إضافة الحرف الذهبي
                         session.lastActivity = Date.now();
                         await saveSession(ws.sessionId, session);
-                        broadcast(ws.sessionId, { type: 'shuffle', data: { hexagons: session.hexagons, lettersOrder: session.lettersOrder } }, null);
+                        broadcast(ws.sessionId, { type: 'shuffle', data: { hexagons: session.hexagons, lettersOrder: session.lettersOrder, goldenLetter: session.goldenLetter } }, null);
                     }
                     break;
 
@@ -711,6 +713,15 @@ wss.on('connection', (ws) => {
                         session.lastActivity = Date.now();
                         await saveSession(ws.sessionId, session);
                         broadcast(ws.sessionId, { type: 'party', data: { active: data.active } }, null);
+                    }
+                    break;
+
+                case 'goldenLetterActivated':
+                    if (ws.sessionId && clients.get(clientId)?.role === 'host') {
+                        const session = sessions.get(ws.sessionId);
+                        session.lastActivity = Date.now();
+                        await saveSession(ws.sessionId, session);
+                        broadcast(ws.sessionId, { type: 'goldenLetterActivated', data: { active: data.active, letter: data.letter } }, null);
                     }
                     break;
 

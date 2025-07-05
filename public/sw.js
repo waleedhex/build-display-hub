@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hroof-game-v4';
+const CACHE_NAME = 'hroof-game-v6';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -8,8 +8,10 @@ const urlsToCache = [
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   '/questions.json',
-  '/buzzer.mp3',
-  '/timeUp.mp3'
+  '/school-bell.mp3',
+  '/timeisup.mp3',
+  '/gold.mp3',
+  '/winning.mp3'
 ];
 
 self.addEventListener('install', event => {

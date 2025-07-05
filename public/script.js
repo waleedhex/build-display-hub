@@ -8,6 +8,7 @@ const colorSets = [
 let currentColorSetIndex = 0;
 let isSwapped = false;
 let defaultQuestions = {};
+let goldenLetter = null; // متغير لتخزين الحرف الذهبي المختار عشوائيًا
 
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -280,6 +281,7 @@ function handleMessages(event) {
         defaultQuestions = data.questions || {};
         currentColorSetIndex = data.colorSetIndex;
         isSwapped = data.isSwapped;
+        goldenLetter = data.goldenLetter || null; // تحديث الحرف الذهبي عند التهيئة
 
         // Load saved session data from local storage if available and not overridden by server data
         const savedSession = localStorage.getItem('savedSession');
@@ -419,6 +421,7 @@ function handleMessages(event) {
             }
         }
     } else if (type === 'shuffle') {
+        goldenLetter = data.goldenLetter || null; // تحديث الحرف الذهبي عند الخلط
         updateGrid(data.hexagons, data.lettersOrder, isHost ? 'hexGridHost' : 'hexGridContestant');
         stopPartyMode();
     } else if (type === 'swapColors') {
@@ -430,8 +433,40 @@ function handleMessages(event) {
         stopPartyMode();
     } else if (type === 'party') {
         if (data.active) startPartyMode(); else stopPartyMode();
-    } else if (type === 'buzzer') {
+    } else if (type === 'goldenLetterActivated') {
+        console.log('Received goldenLetterActivated:', data);
+        if (data.active && data.letter === goldenLetter) {
+            startGoldenLetterCelebration();
+        }
+    }
+    else if (type === 'buzzer') {
         updateBuzzer(data);
+        // Start of modification for background change
+        const container = document.querySelector('.container');
+        if (data.active && data.team) {
+            requestAnimationFrame(() => {
+                if (data.team === 'red') {
+                    container.classList.add(isSwapped ? 'team-background-green' : 'team-background-red');
+                    container.classList.remove(isSwapped ? 'team-background-red' : 'team-background-green');
+                } else if (data.team === 'green') {
+                    container.classList.add(isSwapped ? 'team-background-red' : 'team-background-green');
+                    container.classList.remove(isSwapped ? 'team-background-green' : 'team-background-red');
+                } else {
+                    showToast('خطأ في تحديد الفريق!', 'error'); // Error in determining team!
+                    return;
+                }
+                setTimeout(() => {
+                    requestAnimationFrame(() => {
+                        container.classList.remove('team-background-red', 'team-background-green');
+                    });
+                }, 1000); // Remove background classes after 1 second
+            });
+        } else {
+            requestAnimationFrame(() => {
+                container.classList.remove('team-background-red', 'team-background-green');
+            });
+        }
+        // End of modification for background change
         if (data.active && isHost) {
             const audio = document.getElementById('buzzerSound');
             audio.play().catch(err => console.error('خطأ في تشغيل صوت الجرس:', err)); // Error playing buzzer sound
@@ -500,6 +535,14 @@ window.onload = () => {
     audio.load();
     const timeUpAudio = document.getElementById('timeUpSound');
     timeUpAudio.load();
+    const winningSound = document.getElementById('winningSound');
+    if (winningSound) {
+        winningSound.load();
+    }
+    const goldSound = document.getElementById('goldSound'); // تحميل صوت الحرف الذهبي
+    if (goldSound) {
+        goldSound.load();
+    }
     connectWebSocket(); // Start connection
     window.addEventListener('resize', handleResize);
     initializeShareModal();
@@ -524,6 +567,75 @@ window.onload = () => {
             saveButton.style.display = 'none';
         }
     }
+
+    // Add event listener for copyGeneralQuestionsButton
+    document.getElementById('copyGeneralQuestionsButton').addEventListener('click', async () => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            showToast('لا يوجد اتصال بالخادم!', 'error'); // No server connection!
+            return;
+        }
+        const questions = Array.from(document.querySelectorAll('#generalQuestionsList .question-item'))
+            .map(div => {
+                // Extract letter, question, and answer from the div's text content
+                const textContent = div.innerText.trim();
+                const parts = textContent.split(' - ');
+                // Ensure there are at least 3 parts for letter, question, and answer
+                if (parts.length >= 3) {
+                    return {
+                        letter: parts[0].trim(),
+                        question: parts[1].trim(),
+                        answer: parts[2].trim()
+                    };
+                }
+                return null; // Return null for malformed items
+            })
+            .filter(q => q !== null); // Filter out any null entries
+
+        if (questions.length === 0) {
+            showToast('لا توجد أسئلة لنسخها!', 'error'); // No questions to copy!
+            return;
+        }
+        // Format the questions as tabular text (letter, question, answer separated by tabs)
+        const text = questions.map(q => `${q.letter}\t${q.question}\t${q.answer}`).join('\n');
+        try {
+            // Attempt to copy using the modern Clipboard API
+            await navigator.clipboard.writeText(text);
+            showToast('تم نسخ الأسئلة كنص جدولي!', 'success'); // Questions copied as tabular text!
+        } catch (err) {
+            console.error('فشل في نسخ الأسئلة:', err); // Failed to copy questions
+            // Fallback to the old document.execCommand method if Clipboard API fails
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showToast('تم نسخ الأسئلة كنص جدولي!', 'success'); // Questions copied as tabular text!
+            } catch (execErr) {
+                console.error('فشل النسخ الاحتياطي:', execErr); // Backup copy failed
+                showToast('فشل النسخ، حاول مرة أخرى', 'error'); // Failed to copy, try again
+            }
+        }
+    });
+
+    document.getElementById('addAnnouncementButton').addEventListener('click', () => {
+        const title = document.getElementById('announcementTitle').value.trim();
+        const text = document.getElementById('announcementText').value.trim();
+        const link = document.getElementById('announcementLink').value.trim();
+        const button_text = document.getElementById('announcementButtonText').value.trim();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'addAnnouncement', data: { title, text, link, button_text, phoneNumber } }));
+            document.getElementById('announcementTitle').value = '';
+            document.getElementById('announcementText').value = '';
+            document.getElementById('announcementLink').value = '';
+            document.getElementById('announcementButtonText').value = '';
+        } else {
+            showToast('لا يوجد اتصال بالخادم!', 'error'); // No server connection!
+        }
+    });
 };
 
 function handleResize() {
@@ -1137,8 +1249,23 @@ function displayAdminAnnouncements(ads) {
 
 function createHexGrid(gridId, clickable) {
     const grid = document.getElementById(gridId);
-    if (!grid) return;
-    grid.innerHTML = '<div class="party-text" id="partyText' + (gridId === 'hexGridHost' ? '' : 'Contestant') + '">مبروك</div>'; // Congratulations
+    if (!grid) {
+        console.error('Grid element not found:', gridId);
+        return;
+    }
+
+    // Create or find hexGridWrapper
+    let wrapper = grid.parentElement;
+    if (!wrapper || !wrapper.classList.contains('hexGridWrapper')) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'hexGridWrapper';
+        grid.parentNode.insertBefore(wrapper, grid);
+        wrapper.appendChild(grid);
+    }
+
+    // Clear existing content
+    grid.innerHTML = '';
+
     const layout = [
         ['', '', '', '', '', '', ''],
         ['', 'أ', 'ب', 'ت', 'ث', 'ج', ''],
@@ -1148,6 +1275,7 @@ function createHexGrid(gridId, clickable) {
         ['', 'ق', 'ك', 'ل', 'م', 'ن', ''],
         ['', '', '', '', '', 'ه', '']
     ];
+    console.log('Grid initialized with layout:', layout);
 
     layout.forEach((row, rowIndex) => {
         const rowDiv = document.createElement('div');
@@ -1189,6 +1317,24 @@ function createHexGrid(gridId, clickable) {
         grid.appendChild(rowDiv);
     });
 
+    console.log('Grid rows created:', document.querySelectorAll(`#${gridId} .row`).length);
+    console.log('Changeable hexagons created:', document.querySelectorAll(`#${gridId} .changeable`).length);
+
+    // Create and append party-text and golden-text to wrapper
+    const partyText = document.createElement('div');
+    partyText.className = 'party-text';
+    partyText.id = 'partyText' + (gridId === 'hexGridHost' ? '' : 'Contestant');
+    partyText.textContent = 'مبروك';
+
+    const goldenText = document.createElement('div');
+    goldenText.className = 'golden-text';
+    goldenText.id = 'goldenText' + (gridId === 'hexGridHost' ? '' : 'Contestant');
+    goldenText.textContent = '✨حرف ذهبي✨';
+
+    wrapper.appendChild(partyText);
+    wrapper.appendChild(goldenText);
+
+    // Initialize grid for host
     if (gridId === 'hexGridHost' && isHost && ws && ws.readyState === WebSocket.OPEN) {
         const hexagons = {};
         const availableLetters = [...letters];
@@ -1199,8 +1345,10 @@ function createHexGrid(gridId, clickable) {
             hexagons[shuffled[i]] = { color: '#ffffe0', clickCount: '0' };
             availableLetters.splice(randomIndex, 1);
         }
+        goldenLetter = shuffled[Math.floor(Math.random() * shuffled.length)];
+        console.log('Selected goldenLetter:', goldenLetter);
         updateGrid(hexagons, shuffled, gridId);
-        ws.send(JSON.stringify({ type: 'shuffle', data: { lettersOrder: shuffled, hexagons, phoneNumber } }));
+        ws.send(JSON.stringify({ type: 'shuffle', data: { lettersOrder: shuffled, hexagons, phoneNumber, goldenLetter } }));
     }
 }
 
@@ -1215,6 +1363,15 @@ function handleHexClick(hex) {
     hex.style.backgroundColor = newColor;
 
     console.log('handleHexClick: الحرف=', letter, 'عدد النقرات=', clickCount); // handleHexClick: Letter, click count
+
+    // تفعيل الاحتفالية عند النقر على الحرف الذهبي
+    console.log('Checking golden letter:', letter, 'is golden:', letter === goldenLetter);
+    if (letter === goldenLetter && clickCount === 1 && isHost) {
+        startGoldenLetterCelebration();
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'goldenLetterActivated', data: { letter, active: true, phoneNumber } }));
+        }
+    }
 
     if (clickCount === 1) {
         currentQuestionLetter = letter;
@@ -1293,7 +1450,9 @@ document.getElementById('shuffleButton').addEventListener('click', () => {
             hexagons[shuffled[i]] = { color: '#ffffe0', clickCount: '0' };
             availableLetters.splice(randomIndex, 1);
         }
-        ws.send(JSON.stringify({ type: 'shuffle', data: { lettersOrder: shuffled, hexagons, phoneNumber } }));
+        goldenLetter = shuffled[Math.floor(Math.random() * shuffled.length)]; // اختيار حرف ذهبي جديد عند الخلط
+        console.log('Selected goldenLetter:', goldenLetter);
+        ws.send(JSON.stringify({ type: 'shuffle', data: { lettersOrder: shuffled, hexagons, phoneNumber, goldenLetter } }));
     }
 });
 
@@ -1345,26 +1504,36 @@ function startPartyMode() {
     const partyText = document.getElementById(isHost ? 'partyText' : 'partyTextContestant');
     const grid = document.getElementById(isHost ? 'hexGridHost' : 'hexGridContestant');
     partyText.style.display = 'block';
+    partyText.style.animation = 'shake 0.5s infinite';
+    const winningSound = document.getElementById('winningSound');
+    if (winningSound) {
+        winningSound.play().catch(err => console.error('خطأ في تشغيل صوت الفوز:', err));
+    }
     if (!partyInterval) {
         partyInterval = setInterval(() => {
             const currentSet = colorSets[currentColorSetIndex];
-            const currentTextColor = rgbToHex(partyText.style.color);
-            partyText.style.color = (currentTextColor === '#ffd700') ? currentSet.red : '#ffd700';
-            for (let i = 0; i < 5; i++) { // Adjusted condition from = 5 to < 5
+            const colors = ['#ffd700', currentSet.red, currentSet.green, '#ff4500', '#00ff00', '#ff69b4'];
+            partyText.style.color = colors[Math.floor(Math.random() * colors.length)];
+            for (let i = 0; i < 10; i++) {
                 const flash = document.createElement('div');
                 flash.className = 'flash';
                 flash.style.left = Math.random() * 100 + '%';
                 flash.style.top = Math.random() * 100 + '%';
-                flash.style.backgroundColor = ['#ffd700', '#ff4500', '#00ff00'][Math.floor(Math.random() * 3)];
+                flash.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                flash.style.animationDuration = `${0.5 + Math.random() * 0.5}s`;
                 grid.appendChild(flash);
                 setTimeout(() => flash.remove(), 1000);
             }
-        }, 300);
+        }, 200);
         setTimeout(() => {
             if (ws && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify({ type: 'party', data: { active: false, phoneNumber } }));
             }
-        }, 5000);
+            if (winningSound) {
+                winningSound.pause();
+                winningSound.currentTime = 0;
+            }
+        }, 8500);
     }
 }
 
@@ -1376,6 +1545,46 @@ function stopPartyMode() {
         document.getElementById('partyTextContestant').style.display = 'none';
         document.querySelectorAll('.flash').forEach(flash => flash.remove());
     }
+}
+
+function startGoldenLetterCelebration() {
+    console.log('Golden celebration started');
+    const goldenText = document.getElementById(isHost ? 'goldenText' : 'goldenTextContestant');
+    const grid = document.getElementById(isHost ? 'hexGridHost' : 'hexGridContestant');
+    if (!goldenText || !grid) {
+        console.error('Golden text or grid not found:', { goldenText, grid });
+        return;
+    }
+    goldenText.style.display = 'block';
+    const goldSound = document.getElementById('goldSound');
+    if (goldSound) {
+        goldSound.play().catch(err => console.error('خطأ في تشغيل صوت الحرف الذهبي:', err));
+    }
+    let goldenInterval = setInterval(() => {
+        const colors = ['#ffd700', '#ff4500'];
+        for (let i = 0; i < 5; i++) {
+            const flash = document.createElement('div');
+            flash.className = 'flash';
+            flash.style.left = Math.random() * 100 + '%';
+            flash.style.top = Math.random() * 100 + '%';
+            flash.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            flash.style.animationDuration = `${0.5 + Math.random() * 0.5}s`;
+            grid.appendChild(flash);
+            setTimeout(() => flash.remove(), 1000);
+        }
+    }, 300);
+    setTimeout(() => {
+        clearInterval(goldenInterval);
+        goldenText.style.display = 'none';
+        document.querySelectorAll('.flash').forEach(flash => flash.remove());
+        if (goldSound) {
+            goldSound.pause();
+            goldSound.currentTime = 0;
+        }
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'goldenLetterActivated', data: { active: false, phoneNumber } }));
+        }
+    }, 3000);
 }
 
 document.getElementById('buzzerButton').addEventListener('click', () => {
@@ -1409,9 +1618,14 @@ function updateGrid(hexagons, lettersOrder, gridId) {
         hex.dataset.clickCount = hexagons[letter].clickCount;
     });
 
+    // Dynamically update CSS variables for team colors
+    const currentSet = colorSets[currentColorSetIndex];
+    document.documentElement.style.setProperty('--red-color', isSwapped ? currentSet.green : currentSet.red);
+    document.documentElement.style.setProperty('--green-color', isSwapped ? currentSet.red : currentSet.green);
+
     const redHexagons = document.querySelectorAll(`#${gridId} .red-fixed`);
     const greenHexagons = document.querySelectorAll(`#${gridId} .green-fixed`);
-    const currentSet = colorSets[currentColorSetIndex];
+    
     redHexagons.forEach(hex => {
         hex.style.backgroundColor = isSwapped ? currentSet.green : currentSet.red;
     });

@@ -129,6 +129,7 @@
                 </select>
                 <div id="generalQuestionsList" class="questions-container"></div>
                 <button id="deleteGeneralQuestionsButton">حذف الأسئلة المحددة</button>
+                <button id="copyGeneralQuestionsButton" aria-label="نسخ الأسئلة العامة كنص جدولي للصق في برامج الجداول">نسخ الأسئلة كنص جدولي</button>
                 <h3>أسئلة الجلسات</h3>
                 <select id="sessionLetterFilter">
                     <option value="">جميع الحروف</option>
@@ -232,10 +233,13 @@
                 <p id="installInstructions"></p>
             </div>
         </div>
-    </div>
+        </div>
 
     <audio id="buzzerSound" src="/school-bell.mp3" preload="auto"></audio>
     <audio id="timeUpSound" src="/timeisup.mp3" preload="auto"></audio>
+    <audio id="winningSound" src="/winning.mp3" preload="auto"></audio>
+    <!-- إضافة عنصر الصوت للحرف الذهبي -->
+    <audio id="goldSound" src="/gold.mp3" preload="auto"></audio>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="script.js"></script>

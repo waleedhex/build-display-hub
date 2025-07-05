@@ -6,6 +6,7 @@ const colorSets = [
 ];
 let currentColorSetIndex = 0;
 let isSwapped = false;
+let goldenLetter = null; // New global variable for golden letter
 
 let ws = null;
 let partyInterval = null;
@@ -56,6 +57,7 @@ function handleMessages(event) {
     if (type === 'init') {
         currentColorSetIndex = data.colorSetIndex;
         isSwapped = data.isSwapped;
+        goldenLetter = data.goldenLetter; // Store goldenLetter from init message
         updateGrid(data.hexagons, data.lettersOrder, 'hexGridDisplay');
         updateBuzzer(data.buzzer);
     } else if (type === 'updateHexagon') {
@@ -65,6 +67,7 @@ function handleMessages(event) {
             hex.dataset.clickCount = data.clickCount;
         }
     } else if (type === 'shuffle') {
+        goldenLetter = data.goldenLetter; // Update goldenLetter on shuffle
         updateGrid(data.hexagons, data.lettersOrder, 'hexGridDisplay');
         stopPartyMode();
     } else if (type === 'swapColors') {
@@ -76,6 +79,11 @@ function handleMessages(event) {
         stopPartyMode();
     } else if (type === 'party') {
         if (data.active) startPartyMode(); else stopPartyMode();
+    } else if (type === 'goldenLetterActivated') { // New handler for goldenLetterActivated
+        console.log('Received goldenLetterActivated:', data);
+        if (data.active && data.letter === goldenLetter) {
+            startGoldenLetterCelebration();
+        }
     } else if (type === 'buzzer') {
         updateBuzzer(data);
     } else if (type === 'timeUpWarning') {
@@ -92,17 +100,34 @@ function handleMessages(event) {
 
 window.onload = () => {
     createHexGrid('hexGridDisplay', false);
-    const audio = document.getElementById('buzzerSound');
-    audio.load();
-    const timeUpAudio = document.getElementById('timeUpSound');
-    timeUpAudio.load();
+    const buzzerSound = document.getElementById('buzzerSound');
+    if (buzzerSound) buzzerSound.load();
+    const timeUpSound = document.getElementById('timeUpSound');
+    if (timeUpSound) timeUpSound.load();
+    const goldSound = document.getElementById('goldSound'); // Preload goldSound
+    if (goldSound) goldSound.load();
+    const winningSound = document.getElementById('winningSound'); // Preload winningSound
+    if (winningSound) winningSound.load();
     connectWebSocket();
 };
 
 function createHexGrid(gridId, clickable) {
     const grid = document.getElementById(gridId);
-    if (!grid) return;
-    grid.innerHTML = '<div class="party-text" id="partyTextDisplay">مبروك</div>';
+    if (!grid) {
+        console.error('Grid element not found:', gridId);
+        return;
+    }
+
+    let wrapper = grid.parentElement;
+    if (!wrapper || !wrapper.classList.contains('hexGridWrapper')) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'hexGridWrapper';
+        grid.parentNode.insertBefore(wrapper, grid);
+        wrapper.appendChild(grid);
+    }
+
+    grid.innerHTML = '';
+
     const layout = [
         ['', '', '', '', '', '', ''],
         ['', 'أ', 'ب', 'ت', 'ث', 'ج', ''],
@@ -151,6 +176,20 @@ function createHexGrid(gridId, clickable) {
         });
         grid.appendChild(rowDiv);
     });
+
+    // Create partyText and goldenText dynamically and append to wrapper
+    const partyText = document.createElement('div');
+    partyText.className = 'party-text';
+    partyText.id = 'partyTextDisplay';
+    partyText.textContent = 'مبروك';
+
+    const goldenText = document.createElement('div');
+    goldenText.className = 'golden-text';
+    goldenText.id = 'goldenText';
+    goldenText.textContent = '✨حرف ذهبي✨';
+
+    wrapper.appendChild(partyText);
+    wrapper.appendChild(goldenText);
 }
 
 function rgbToHex(rgb) {
@@ -187,18 +226,42 @@ function updateGrid(hexagons, lettersOrder, gridId) {
 
 function updateBuzzer(buzzer) {
     const info = document.getElementById('buzzerInfoDisplay');
+    const container = document.querySelector('.container'); // Get the container element
     if (buzzer.active && buzzer.player && buzzer.team) {
         const teamName = buzzer.team === 'red' ? 'الأحمر' : 'الأخضر';
         info.innerText = `${buzzer.player} من الفريق ${teamName}`;
+        // Add class to change background color
+        container.classList.add(`buzzer-active-${buzzer.team}`);
+        setTimeout(() => {
+            container.classList.remove(`buzzer-active-${buzzer.team}`);
+            container.classList.add('buzzer-reset');
+            setTimeout(() => {
+                container.classList.remove('buzzer-reset');
+            }, 100); // Small delay to allow transition back to original color
+        }, 1000); // Remove after 1 second
     } else {
         info.innerText = '';
+        // Ensure classes are removed when buzzer is inactive
+        container.classList.remove('buzzer-active-red', 'buzzer-active-green', 'buzzer-reset');
+    }
+    const buzzerSound = document.getElementById('buzzerSound');
+    if (buzzer.active && buzzerSound) {
+        buzzerSound.play().catch(err => console.error('خطأ في تشغيل صوت الجرس:', err));
     }
 }
 
 function startPartyMode() {
     const partyText = document.getElementById('partyTextDisplay');
     const grid = document.getElementById('hexGridDisplay');
+    if (!partyText || !grid) { // Add null checks
+        console.error('Party text or grid not found:', { partyText, grid });
+        return;
+    }
     partyText.style.display = 'block';
+    const winningSound = document.getElementById('winningSound'); // Get winning sound element
+    if (winningSound) {
+        winningSound.play().catch(err => console.error('خطأ في تشغيل صوت الاحتفالية:', err));
+    }
     if (!partyInterval) {
         partyInterval = setInterval(() => {
             const currentSet = colorSets[currentColorSetIndex];
@@ -209,14 +272,19 @@ function startPartyMode() {
                 flash.className = 'flash';
                 flash.style.left = Math.random() * 100 + '%';
                 flash.style.top = Math.random() * 100 + '%';
-                flash.style.backgroundColor = ['#ffd700', '#ff4500', '#00ff00'][Math.floor(Math.random() * 3)];
+                const colors = ['#ffd700', '#ff4500', '#00ff00']; // Define colors for flashes
+                flash.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
                 grid.appendChild(flash);
                 setTimeout(() => flash.remove(), 1000);
             }
         }, 300);
         setTimeout(() => {
             stopPartyMode();
-        }, 5000);
+            if (winningSound) { // Stop winning sound after party mode
+                winningSound.pause();
+                winningSound.currentTime = 0;
+            }
+        }, 8500); // Party mode duration set to 8.5 seconds
     }
 }
 
@@ -224,7 +292,51 @@ function stopPartyMode() {
     if (partyInterval) {
         clearInterval(partyInterval);
         partyInterval = null;
-        document.getElementById('partyTextDisplay').style.display = 'none';
+        const partyText = document.getElementById('partyTextDisplay'); // Get partyText element
+        if (partyText) partyText.style.display = 'none'; // Null check for partyText
         document.querySelectorAll('.flash').forEach(flash => flash.remove());
+        const winningSound = document.getElementById('winningSound'); // Get winning sound element
+        if (winningSound) { // Stop winning sound if it's playing
+            winningSound.pause();
+            winningSound.currentTime = 0;
+        }
     }
+}
+
+// New function for golden letter celebration
+function startGoldenLetterCelebration() {
+    console.log('Golden celebration started');
+    const goldenText = document.getElementById('goldenText');
+    const grid = document.getElementById('hexGridDisplay');
+    if (!goldenText || !grid) { // Add null checks
+        console.error('Golden text or grid not found:', { goldenText, grid });
+        return;
+    }
+    goldenText.style.display = 'block';
+    const goldSound = document.getElementById('goldSound'); // Get gold sound element
+    if (goldSound) {
+        goldSound.play().catch(err => console.error('خطأ في تشغيل صوت الحرف الذهبي:', err));
+    }
+    let goldenInterval = setInterval(() => {
+        const colors = ['#ffd700', '#ff4500']; // Colors for golden flashes
+        for (let i = 0; i < 5; i++) {
+            const flash = document.createElement('div');
+            flash.className = 'flash';
+            flash.style.left = Math.random() * 100 + '%';
+            flash.style.top = Math.random() * 100 + '%';
+            flash.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            flash.style.animationDuration = `${0.5 + Math.random() * 0.5}s`; // Randomize flash duration
+            grid.appendChild(flash);
+            setTimeout(() => flash.remove(), 1000);
+        }
+    }, 300);
+    setTimeout(() => {
+        clearInterval(goldenInterval);
+        goldenText.style.display = 'none';
+        document.querySelectorAll('.flash').forEach(flash => flash.remove());
+        if (goldSound) { // Stop gold sound after celebration
+            goldSound.pause();
+            goldSound.currentTime = 0;
+        }
+    }, 3000); // Golden letter celebration duration set to 3 seconds
 }
