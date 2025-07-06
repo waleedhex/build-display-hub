@@ -90,7 +90,7 @@ body {
 .hexGridWrapper {
     position: relative;
     width: 100%;
-    max-width: 800px;
+    max-width: none;
     margin: 0 auto;
     display: flex;
     justify-content: center;
@@ -946,7 +946,7 @@ input:checked + .slider:before {
 
     #hexGridHost, #hexGridContestant {
         width: calc(7 * (95vw / 7) + 6 * (95vw / 200));
-        max-width: 600px;
+        max-width: none;
         min-width: 300px;
     }
 
