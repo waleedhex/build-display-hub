@@ -1,12 +1,11 @@
-import type { Config } from "tailwindcss"
-
-const config = {
+/** @type {import('tailwindcss').Config} */
+export default {
   darkMode: ["class"],
   content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}',
+    './pages/**/*.{js,jsx}',
+    './components/**/*.{js,jsx}',
+    './app/**/*.{js,jsx}',
+    './src/**/*.{js,jsx}',
   ],
   prefix: "",
   theme: {
@@ -52,22 +51,6 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Game specific colors
-        team: {
-          red: "hsl(var(--team-red))",
-          green: "hsl(var(--team-green))",
-          blue: "hsl(var(--team-blue))",
-          yellow: "hsl(var(--team-yellow))",
-        },
-        gold: {
-          DEFAULT: "hsl(var(--gold))",
-          light: "hsl(var(--gold-light))",
-        },
-        hex: {
-          primary: "hsl(var(--hex-primary))",
-          secondary: "hsl(var(--hex-secondary))",
-          hover: "hsl(var(--hex-hover))",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -83,50 +66,10 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        fadeIn: {
-          from: { 
-            opacity: "0",
-            transform: "scale(0.8)"
-          },
-          to: { 
-            opacity: "1",
-            transform: "scale(1)"
-          },
-        },
-        pulse: {
-          "0%, 100%": {
-            transform: "scale(1)",
-            opacity: "1",
-          },
-          "50%": {
-            transform: "scale(1.05)",
-            opacity: "0.8",
-          },
-        },
-        zoomPulse: {
-          "0%": { transform: "scale(1)" },
-          "50%": { transform: "scale(1.1)" },
-          "100%": { transform: "scale(1)" },
-        },
-        flashAnimation: {
-          "0%, 100%": { opacity: "0" },
-          "50%": { opacity: "1" },
-        },
-        partyFlash: {
-          "0%, 100%": { backgroundColor: "hsl(var(--background))" },
-          "25%": { backgroundColor: "hsl(var(--team-red))" },
-          "50%": { backgroundColor: "hsl(var(--team-green))" },
-          "75%": { backgroundColor: "hsl(var(--team-blue))" },
-        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        fadeIn: "fadeIn 0.3s ease-out",
-        pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-        zoomPulse: "zoomPulse 2s infinite",
-        flash: "flashAnimation 1s infinite",
-        partyFlash: "partyFlash 0.5s infinite",
       },
       fontFamily: {
         arabic: ['Cairo', 'sans-serif'],
@@ -134,6 +77,4 @@ const config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config
-
-export default config
+}
