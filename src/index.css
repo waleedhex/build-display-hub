@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Arabic-themed color palette */
+    --background: 220 15% 6%;
+    --foreground: 220 9% 95%;
+    
+    --card: 220 13% 9%;
+    --card-foreground: 220 9% 95%;
+    
+    --popover: 220 13% 9%;
+    --popover-foreground: 220 9% 95%;
+    
+    --primary: 280 100% 35%;
+    --primary-foreground: 220 9% 95%;
+    
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 220 9% 95%;
+    
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 9% 60%;
+    
+    --accent: 280 100% 45%;
+    --accent-foreground: 220 9% 95%;
+    
+    --destructive: 0 62% 55%;
+    --destructive-foreground: 220 9% 95%;
+    
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 280 100% 35%;
+    
+    /* Game specific colors */
+    --team-red: 0 84% 60%;
+    --team-green: 142 76% 36%;
+    --team-blue: 221 83% 53%;
+    --team-yellow: 48 96% 53%;
+    
+    /* Gold/celebration colors */
+    --gold: 45 100% 51%;
+    --gold-light: 45 100% 70%;
+    
+    /* Hexagon colors */
+    --hex-primary: 280 100% 35%;
+    --hex-secondary: 220 13% 15%;
+    --hex-hover: 280 100% 45%;
+    
+    /* Animation variables */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --scale-factor: 1;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 280 100% 35%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 280 100% 45%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 280 100% 35%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-arabic;
+    font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    direction: rtl;
+  }
+}
+
+/* Arabic font import */
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
+
+/* Hexagon animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes zoomPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes flashAnimation {
+  0%, 100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes partyFlash {
+  0%, 100% {
+    background-color: hsl(var(--background));
+  }
+  25% {
+    background-color: hsl(var(--team-red));
+  }
+  50% {
+    background-color: hsl(var(--team-green));
+  }
+  75% {
+    background-color: hsl(var(--team-blue));
+  }
+}
+
+/* Utility classes */
+.font-arabic {
+  font-family: 'Cairo', sans-serif;
+}
+
+.hexagon-clip {
+  clip-path: polygon(30% 0%, 70% 0%, 100% 50%, 70% 100%, 30% 100%, 0% 50%);
+}
+
+.transition-smooth {
+  transition: var(--transition-smooth);
+}
+
+/* Team color utilities */
+.team-red { color: hsl(var(--team-red)); }
+.team-green { color: hsl(var(--team-green)); }
+.team-blue { color: hsl(var(--team-blue)); }
+.team-yellow { color: hsl(var(--team-yellow)); }
+
+.bg-team-red { background-color: hsl(var(--team-red)); }
+.bg-team-green { background-color: hsl(var(--team-green)); }
+.bg-team-blue { background-color: hsl(var(--team-blue)); }
+.bg-team-yellow { background-color: hsl(var(--team-yellow)); }
+
+/* Golden text effect */
+.golden-text {
+  background: linear-gradient(45deg, hsl(var(--gold)), hsl(var(--gold-light)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: zoomPulse 2s infinite;
+}
